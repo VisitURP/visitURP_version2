@@ -10,10 +10,13 @@ import Toast from "./Toast";
 const navigation = [
   { name: "Dashboard", to: "/" },
   { name: "Surveys", to: "/surveys" },
-  { name: "Visitantes", to: "/visitors" },
-  { name: "Consultas", to: "/surveys" },
-  { name: "Facultades", to: "/surveys" },
-  { name: "Semestres", to: "/surveys" },
+  { name: "Visitantes", to: "/visitantes" },
+  { name: "Consultas", to: "/consultas" },
+  { name: "Facultades", to: "/facultades" },
+  { name: "ChatBotQA", to: "/chatbotqa" },
+  { name: "Feedbacks", to: "/feedbacks" },
+  { name: "Semestres", to: "/semestres" },
+  { name: "Perfiles", to: "/profiles" },
 ];
 
 function classNames(...classes) {
@@ -45,17 +48,17 @@ export default function DefaultLayout() {
   return (
     <div className="h-screen flex">
       {/* Sidebar */}
-      <div className="bg-gray-800 w-64 flex flex-col justify-between">
+      <div className="bg-green-800 w-64 flex flex-col justify-between">
         <div className="space-y-6 px-2 py-7">
           <div className="flex items-center justify-center">
             <img
               className="h-12 w-12"
               src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-              alt="Your Company"
+              alt="Logo Universidad Ricardo Palma"
             />
           </div>
 
-          <nav className="mt-10">
+          <nav className="mt-10 space-y-1">
             {navigation.map((item) => (
               <NavLink
                 key={item.name}
@@ -74,6 +77,8 @@ export default function DefaultLayout() {
             ))}
           </nav>
         </div>
+
+        
 
         {/* Profile dropdown */}
         <div className="px-2 pb-5">
