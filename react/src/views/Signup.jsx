@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { LockClosedIcon } from "@heroicons/react/20/solid";
 import { useState } from "react";
-import axiosClient from "../axios.js";
+import axiosClient from '../axios.js'
 import { useStateContext } from "../contexts/ContextProvider.jsx";
 
 export default function Signup() {
@@ -16,6 +16,7 @@ export default function Signup() {
     ev.preventDefault();
     setError({ __html: "" });
 
+
     axiosClient
       .post("/signup", {
         name: fullName,
@@ -24,20 +25,16 @@ export default function Signup() {
         password_confirmation: passwordConfirmation,
       })
       .then(({ data }) => {
-        setCurrentUser(data.user);
-        setUserToken(data.token);
+        setCurrentUser(data.user)
+        setUserToken(data.token)
       })
       .catch((error) => {
-        if (error.response && error.response.data.errors) {
-          const finalErrors = Object.values(
-            error.response.data.errors || {}
-          ).reduce((accum, next) => [...accum, ...next], []);
-          console.log(finalErrors);
-          setError({ __html: finalErrors.join("<br>") });
-        } else {
-          setError({ __html: "An unexpected error occurred." });
+        if (error.response) {
+          const finalErrors = Object.values(error.response.data.errors).reduce((accum, next) => [...accum, ...next], [])
+          console.log(finalErrors)
+          setError({__html: finalErrors.join('<br>')})
         }
-        console.error(error);
+        console.error(error)
       });
   };
 
@@ -56,12 +53,8 @@ export default function Signup() {
         </Link>
       </p>
 
-      {error.__html && (
-        <div
-          className="bg-red-500 rounded py-2 px-3 text-white"
-          dangerouslySetInnerHTML={error}
-        ></div>
-      )}
+      {error.__html && (<div className="bg-red-500 rounded py-2 px-3 text-white" dangerouslySetInnerHTML={error}>
+      </div>)}
 
       <form
         onSubmit={onSubmit}
@@ -81,7 +74,7 @@ export default function Signup() {
               type="text"
               required
               value={fullName}
-              onChange={(ev) => setFullName(ev.target.value)}
+              onChange={ev => setFullName(ev.target.value)}
               className="relative block w-full appearance-none rounded-none rounded-t-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
               placeholder="Full Name"
             />
@@ -97,7 +90,7 @@ export default function Signup() {
               autoComplete="email"
               required
               value={email}
-              onChange={(ev) => setEmail(ev.target.value)}
+              onChange={ev => setEmail(ev.target.value)}
               className="relative block w-full appearance-none rounded-none border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
               placeholder="Email address"
             />
@@ -113,7 +106,7 @@ export default function Signup() {
               autoComplete="current-password"
               required
               value={password}
-              onChange={(ev) => setPassword(ev.target.value)}
+              onChange={ev => setPassword(ev.target.value)}
               className="relative block w-full appearance-none rounded-none border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
               placeholder="Password"
             />
@@ -129,7 +122,7 @@ export default function Signup() {
               type="password"
               required
               value={passwordConfirmation}
-              onChange={(ev) => setPasswordConfirmation(ev.target.value)}
+              onChange={ev => setPasswordConfirmation(ev.target.value)}
               className="relative block w-full appearance-none rounded-none rounded-b-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
               placeholder="Password Confirmation"
             />
