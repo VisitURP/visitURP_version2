@@ -7,6 +7,11 @@ import Signup from "./views/Signup";
 import SurveyPublicView from "./views/SurveyPublicView";
 import Surveys from "./views/Surveys";
 import SurveyView from "./views/SurveyView";
+import VisitorsP from "./views/VisitorsP";
+import VisitorsV from "./views/VisitorsV";
+import QuerysP from "./views/QuerysP";
+import QuerysN from "./views/QuerysN";
+import Semesters from "./views/Semesters";
 
 const router = createBrowserRouter([
   {
@@ -14,8 +19,8 @@ const router = createBrowserRouter([
     element: <DefaultLayout />,
     children: [
       {
-        path: '/dashboard',
-        element: <Navigate to="/" />
+        path: "/dashboard",
+        element: <Navigate to="/" />,
       },
       {
         path: "/",
@@ -32,6 +37,26 @@ const router = createBrowserRouter([
       {
         path: "/surveys/:id",
         element: <SurveyView />,
+      },
+      {
+        path: "/visitorsp",
+        element: <VisitorsP />,
+      },
+      {
+        path: "/visitorsv",
+        element: <VisitorsV />,
+      },
+      {
+        path: "/querysp",
+        element: <QuerysP />,
+      },
+      {
+        path: "/querysn",
+        element: <QuerysN />,
+      },
+      {
+        path: "/semesters",
+        element: <Semesters />,
       },
     ],
   },

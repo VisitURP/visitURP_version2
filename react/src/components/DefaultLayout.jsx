@@ -1,20 +1,42 @@
-import { Fragment, useState } from "react"; 
+import { Fragment, useState } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
-import { ChevronUpIcon, UserIcon } from "@heroicons/react/24/outline";
+import {
+  ChevronUpIcon,
+  ChevronDownIcon,
+  UserIcon,
+  HomeIcon,
+  ClipboardIcon,
+  UsersIcon,
+  AcademicCapIcon,
+  QuestionMarkCircleIcon,
+} from "@heroicons/react/24/outline";
 import { Navigate, NavLink, Outlet } from "react-router-dom";
 import { useStateContext } from "../contexts/ContextProvider";
 import axiosClient from "../axios";
 import { useEffect } from "react";
 import Toast from "./Toast";
 
-// Navigation items
+// Navigation items with dropdowns for Visitantes and Preguntas
 const navigation = [
-  { name: "DASHBOARD", to: "/" },
-  { name: "SURVEYS", to: "/surveys" },
-  { name: "VISITANTES", to: "/visitors" },
-  { name: "CONSULTAS", to: "/querys" },
-  { name: "SEMESTRES", to: "/semesters" },
-  { name: "PERFILES", to: "/profiles" },
+  { name: "DASHBOARD", to: "/", icon: HomeIcon },
+  { name: "SURVEYS", to: "/surveys", icon: ClipboardIcon },
+  {
+    name: "VISITANTES",
+    icon: UsersIcon,
+    children: [
+      { name: "Presenciales", to: "/visitorsp" },
+      { name: "Virtuales", to: "/visitorsv" },
+    ],
+  },
+  {
+    name: "PREGUNTAS",
+    icon: QuestionMarkCircleIcon,
+    children: [
+      { name: "Predefinidas", to: "/querysp" },
+      { name: "No Predefinidas", to: "/querysn" },
+    ],
+  },
+  { name: "SEMESTRES", to: "/semesters", icon: AcademicCapIcon },
 ];
 
 function classNames(...classes) {
@@ -22,7 +44,9 @@ function classNames(...classes) {
 }
 
 export default function DefaultLayout() {
-  const { currentUser, userToken, setCurrentUser, setUserToken } = useStateContext();
+  const { currentUser, userToken, setCurrentUser, setUserToken } =
+    useStateContext();
+  const [openDropdown, setOpenDropdown] = useState(null); // To manage dropdown state
 
   if (!userToken) {
     return <Navigate to="login" />;
@@ -42,6 +66,11 @@ export default function DefaultLayout() {
     });
   }, []);
 
+  // Function to handle dropdown toggle
+  const toggleDropdown = (name) => {
+    setOpenDropdown(openDropdown === name ? null : name);
+  };
+
   return (
     <div className="h-screen flex">
       {/* Sidebar */}
@@ -58,22 +87,57 @@ export default function DefaultLayout() {
 
         {/* Navigation */}
         <nav className="flex-1 px-2 py-4 space-y-4">
-          {navigation.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.to}
-              className={({ isActive }) =>
-                classNames(
-                  isActive
-                    ? "bg-green-700 text-white"
-                    : "hover:bg-green-700 hover:text-white",
-                  "flex items-center px-4 py-2 text-sm font-medium rounded-md"
-                )
-              }
-            >
-              <span className="ml-3">{item.name}</span>
-            </NavLink>
-          ))}
+          {navigation.map((item) =>
+            item.children ? (
+              // If the item has children, render it as a dropdown
+              <div key={item.name}>
+                <button
+                  onClick={() => toggleDropdown(item.name)}
+                  className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium rounded-md hover:bg-green-700"
+                >
+                  <div className="flex items-center space-x-2">
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.name}</span>
+                  </div>
+                  {openDropdown === item.name ? (
+                    <ChevronUpIcon className="h-5 w-5" />
+                  ) : (
+                    <ChevronDownIcon className="h-5 w-5" />
+                  )}
+                </button>
+                {openDropdown === item.name && (
+                  <div className="pl-8 mt-2 space-y-2">
+                    {item.children.map((subItem) => (
+                      <NavLink
+                        key={subItem.name}
+                        to={subItem.to}
+                        className="block px-4 py-2 text-sm font-medium rounded-md hover:bg-green-700"
+                      >
+                        {subItem.name}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Render normal navigation links
+              <NavLink
+                key={item.name}
+                to={item.to}
+                className={({ isActive }) =>
+                  classNames(
+                    isActive
+                      ? "bg-green-700 text-white"
+                      : "hover:bg-green-700 hover:text-white",
+                    "flex items-center px-4 py-2 text-sm font-medium rounded-md"
+                  )
+                }
+              >
+                <item.icon className="h-5 w-5 mr-3" />
+                <span>{item.name}</span>
+              </NavLink>
+            )
+          )}
         </nav>
 
         {/* User profile & Logout */}
@@ -114,7 +178,7 @@ export default function DefaultLayout() {
         <div className="bg-green-600 shadow p-4 flex justify-between items-center text-white">
           <div className="text-lg font-bold">VISITURP</div>
           <div className="flex items-center space-x-4">
-            <div className="text-sm">Alexa Admin</div>
+            <div className="text-sm">{currentUser?.name || "Alexa Admin"}</div>
             <Menu as="div" className="relative">
               <Menu.Button className="flex items-center rounded-full bg-green-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                 <span className="sr-only">Open user menu</span>
