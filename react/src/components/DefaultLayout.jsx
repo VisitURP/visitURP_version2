@@ -9,6 +9,8 @@ import {
   UsersIcon,
   AcademicCapIcon,
   QuestionMarkCircleIcon,
+  Bars3Icon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { Navigate, NavLink, Outlet } from "react-router-dom";
 import { useStateContext } from "../contexts/ContextProvider";
@@ -47,6 +49,7 @@ export default function DefaultLayout() {
   const { currentUser, userToken, setCurrentUser, setUserToken } =
     useStateContext();
   const [openDropdown, setOpenDropdown] = useState(null); // To manage dropdown state
+  const [sidebarOpen, setSidebarOpen] = useState(false); // State to toggle sidebar
 
   if (!userToken) {
     return <Navigate to="login" />;
@@ -73,16 +76,34 @@ export default function DefaultLayout() {
 
   return (
     <div className="h-screen flex">
+      {/* Mobile sidebar toggle button */}
+      <div className="sm:hidden">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-4 text-white bg-green-600"
+        >
+          {sidebarOpen ? (
+            <XMarkIcon className="h-6 w-6" />
+          ) : (
+            <Bars3Icon className="h-6 w-6" />
+          )}
+        </button>
+      </div>
+
       {/* Sidebar */}
-      <div className="bg-green-900 text-white w-64 flex flex-col justify-between">
+      <div
+        className={`bg-green-900 text-white w-64 flex flex-col justify-between transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
+        }`}
+      >
         {/* Logo */}
-        <div className="flex flex-col items-center mt-8 space-y-6">
+        <div className="flex flex-col items-center mt-4 space-y-2">
           <img
             className="h-16 w-16"
-            src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-            alt="Logo Universidad Ricardo Palma"
+            src="images/logo.png"
+            alt="Intranet URP Logo"
           />
-          <h1 className="text-2xl font-bold text-white">VISITURP</h1>
+          <h1 className="text-2xl font-bold">VISITURP</h1>
         </div>
 
         {/* Navigation */}
@@ -106,17 +127,27 @@ export default function DefaultLayout() {
                   )}
                 </button>
                 {openDropdown === item.name && (
-                  <div className="pl-8 mt-2 space-y-2">
-                    {item.children.map((subItem) => (
-                      <NavLink
-                        key={subItem.name}
-                        to={subItem.to}
-                        className="block px-4 py-2 text-sm font-medium rounded-md hover:bg-green-700"
-                      >
-                        {subItem.name}
-                      </NavLink>
-                    ))}
-                  </div>
+                  <Transition
+                    show={openDropdown === item.name}
+                    enter="transition-opacity duration-300"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="transition-opacity duration-200"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                  >
+                    <div className="pl-8 mt-2 space-y-2">
+                      {item.children.map((subItem) => (
+                        <NavLink
+                          key={subItem.name}
+                          to={subItem.to}
+                          className="block px-4 py-2 text-sm font-medium rounded-md hover:bg-green-700"
+                        >
+                          {subItem.name}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </Transition>
                 )}
               </div>
             ) : (
