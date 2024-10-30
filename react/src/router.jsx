@@ -12,6 +12,7 @@ import VisitorsV from "./views/VisitorsV";
 import QuerysP from "./views/QuerysP";
 import QuerysN from "./views/QuerysN";
 import Semesters from "./views/Semesters";
+import RegisterVisit from "./views/RegisterVisit";  
 
 const router = createBrowserRouter([
   {
@@ -45,6 +46,10 @@ const router = createBrowserRouter([
       {
         path: "/visitorsv",
         element: <VisitorsV />,
+      },
+      {
+        path: "/register-visit",    
+        element: <RegisterVisit />,
       },
       {
         path: "/querysp",
