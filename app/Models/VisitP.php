@@ -13,6 +13,10 @@ class VisitP extends Model
 
     public $timestamps = false;
 
+    protected $primaryKey = 'ID_Visitante';
+
+    public $incrementing = false;
+
     protected $fillable = [
         'ID_Visitante',
         'Fecha_Visita',

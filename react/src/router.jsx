@@ -13,6 +13,7 @@ import QuerysP from "./views/QuerysP";
 import QuerysN from "./views/QuerysN";
 import Semesters from "./views/Semesters";
 import RegisterVisit from "./views/RegisterVisit";  
+import EditVisit from "./views/EditVisit"; 
 
 const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ const router = createBrowserRouter([
       {
         path: "/register-visit",    
         element: <RegisterVisit />,
+      },
+      {
+        path: "/edit-visit",
+        element: <EditVisit />,
       },
       {
         path: "/querysp",
