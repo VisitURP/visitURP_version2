@@ -3,50 +3,55 @@ import axios from 'axios';
 
 export default function VisitorsV() {
   const [visitors, setVisitors] = useState([]);
-  const [showModal, setShowModal] = useState(false); 
-  const [newVisitor, setNewVisitor] = useState({ identificacion: '', fecha: '', hora: '', semestre: '', provincia: '' }); 
-  const [visitorToEdit, setVisitorToEdit] = useState(null); 
+  const [showModal, setShowModal] = useState(false);
+  const [newVisitor, setNewVisitor] = useState({ identificacion: '', fecha: '', hora: '', semestre: '', provincia: '' });
+  const [visitorToEdit, setVisitorToEdit] = useState(null);
   const [visitorToDelete, setVisitorToDelete] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchVisitors = async () => {
       try {
+        setLoading(true);
         const response = await axios.get('http://localhost:3000/api/visitors');
         setVisitors(response.data);
       } catch (error) {
         console.error("Error fetching visitors:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchVisitors();
-  }, []); // Asegúrate de no tener dependencias aquí si no es necesario
+  }, []);
 
   const handleAddVisitor = async (e) => {
     e.preventDefault();
-    console.log("Guardar visitante:", newVisitor);
-    
+
     if (!newVisitor.identificacion || !newVisitor.fecha || !newVisitor.hora) {
       alert("Por favor, completa todos los campos requeridos.");
       return;
     }
-  
+
     try {
+      setLoading(true);
       if (visitorToEdit) {
         // Actualizar visitante
-        const response = await axios.put(`/api/visitors/${visitorToEdit.id}`, newVisitor);
+        const response = await axios.put(`http://localhost:3000/api/visitors/${visitorToEdit.id}`, newVisitor);
         setVisitors(visitors.map((visitor) =>
           visitor.id === visitorToEdit.id ? { ...response.data } : visitor
         ));
         setVisitorToEdit(null);
       } else {
         // Agregar nuevo visitante
-        const response = await axios.post('/api/visitors', { ...newVisitor, estado: 'Completado' });
+        const response = await axios.post('http://localhost:3000/api/visitors', { ...newVisitor, estado: 'Completado' });
         setVisitors([...visitors, response.data]);
       }
-      setNewVisitor({ identificacion: '', fecha: '', hora: '', semestre: '', provincia: '' });
-      setShowModal(false);
+      resetForm();
     } catch (error) {
       console.error("Error al agregar/actualizar visitante:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -68,12 +73,15 @@ export default function VisitorsV() {
 
   const confirmDelete = async () => {
     try {
-      await axios.delete(`/api/visitors/${visitorToDelete}`);
+      setLoading(true);
+      await axios.delete(`http://localhost:3000/api/visitors/${visitorToDelete}`);
       setVisitors((prev) => prev.filter((visitor) => visitor.id !== visitorToDelete));
-      setShowModal(false);
       setVisitorToDelete(null);
+      setShowModal(false);
     } catch (error) {
       console.error("Error deleting visitor:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,6 +107,8 @@ export default function VisitorsV() {
 
       <h2>Gestión de Visitas</h2>
       <button className="add-button" onClick={() => { resetForm(); setShowModal(true); }}>Agregar Visitante</button>
+
+      {loading && <p>Cargando...</p>}
 
       <table>
         <thead>
@@ -155,7 +165,7 @@ export default function VisitorsV() {
             )}
           </div>
         </div>
-      )} 
-    </div> 
-  ); 
+      )}
+    </div>
+  );
 }
