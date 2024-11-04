@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1",
+    "identificacion": "12345678",
+    "fecha": "2024-11-04",
+    "hora": "10:00",
+    "semestre": "1",
+    "provincia": "Lima",
+    "estado": "Completado"
+  },
+  {
+    "id": "2",
+    "identificacion": "87654321",
+    "fecha": "2024-11-05",
+    "hora": "11:00",
+    "semestre": "2",
+    "provincia": "Cusco",
+    "estado": "Pendiente"
+  }
+]
