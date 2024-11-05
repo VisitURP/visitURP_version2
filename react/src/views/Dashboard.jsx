@@ -40,7 +40,7 @@ export default function CombinedDashboard() {
         <OverviewCards />
         <RevenueChart />
 
-        {/* Survey Data */}
+        {/* Survey Data 
         <PageComponent title="Survey Overview">
           {loading && <div className="flex justify-center">Loading...</div>}
           {!loading && (
@@ -146,16 +146,17 @@ export default function CombinedDashboard() {
             </div>
           )}
         </PageComponent>
+        */}
 
         {/* Analytics Components */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-3">
           <ChannelPerformance />
           <ProductPerformance />
           <UserRetention />
           <CustomerSegmentation />
         </div>
 
-        <AIPoweredInsights />
+        {/*<AIPoweredInsights /> Si quieres agregar esta parte cambia arriba mb-8 */}
       </main>
     </div>
   );

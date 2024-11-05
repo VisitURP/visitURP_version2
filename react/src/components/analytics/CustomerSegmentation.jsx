@@ -1,53 +1,88 @@
 import { motion } from "framer-motion";
 import {
-	ResponsiveContainer,
-	Radar,
-	RadarChart,
-	PolarGrid,
-	PolarAngleAxis,
-	PolarRadiusAxis,
-	Legend,
-	Tooltip,
+  ResponsiveContainer,
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Legend,
+  Tooltip,
 } from "recharts";
 
-const customerSegmentationData = [
-	{ subject: "Engagement", A: 120, B: 110, fullMark: 150 },
-	{ subject: "Loyalty", A: 98, B: 130, fullMark: 150 },
-	{ subject: "Satisfaction", A: 86, B: 130, fullMark: 150 },
-	{ subject: "Spend", A: 99, B: 100, fullMark: 150 },
-	{ subject: "Frequency", A: 85, B: 90, fullMark: 150 },
-	{ subject: "Recency", A: 65, B: 85, fullMark: 150 },
+// Datos de visitas a objetos interactivos de Ingeniería
+const engineeringData = [
+  { name: "Biblioteca Central", visitas: 130 },
+  { name: "Esc. Informática", visitas: 110 },
+  { name: "Esc. Industrial", visitas: 95 },
+  { name: "Esc. Mecatrónica", visitas: 100 },
+  { name: "Esc. Electrónica", visitas: 90 },
+  { name: "Esc. Civil", visitas: 105 },
+  { name: "Lab. Hidráulica", visitas: 85 },
+  { name: "Lab. CIM", visitas: 70 },
+  { name: "Lab. Electrónica", visitas: 80 },
+  { name: "Lab. Física", visitas: 75 },
+  { name: "Lab. Física 2", visitas: 65 },
+  { name: "Lab. Mec. Suelos", visitas: 60 },
+  { name: "Lab. Resistencia", visitas: 55 },
+  { name: "Lab. Topografía", visitas: 50 },
+  { name: "Lab. Mecatrónica", visitas: 45 },
+  { name: "Lab. Info. 201-A", visitas: 100 },
+  { name: "Lab. Info. 201-B", visitas: 95 },
+  { name: "Lab. Info. 202-A", visitas: 90 },
+  { name: "Lab. Info. 203-A", visitas: 85 },
+  { name: "Lab. Info. 204-A", visitas: 75 },
+  { name: "Lab. Info. 210-C", visitas: 70 },
+  { name: "Lab. Info. 213-B", visitas: 60 },
 ];
 
-const CustomerSegmentation = () => {
-	return (
-		<motion.div
-			className='bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-lg shadow-lg rounded-xl p-6 border border-gray-700'
-			initial={{ opacity: 0, y: 20 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ delay: 0.6 }}
-		>
-			<h2 className='text-xl font-semibold text-gray-100 mb-4'>Customer Segmentation</h2>
-			<div style={{ width: "100%", height: 300 }}>
-				<ResponsiveContainer>
-					<RadarChart cx='50%' cy='50%' outerRadius='80%' data={customerSegmentationData}>
-						<PolarGrid stroke='#374151' />
-						<PolarAngleAxis dataKey='subject' stroke='#9CA3AF' />
-						<PolarRadiusAxis angle={30} domain={[0, 150]} stroke='#9CA3AF' />
-						<Radar name='Segment A' dataKey='A' stroke='#8B5CF6' fill='#8B5CF6' fillOpacity={0.6} />
-						<Radar name='Segment B' dataKey='B' stroke='#10B981' fill='#10B981' fillOpacity={0.6} />
-						<Legend />
-						<Tooltip
-							contentStyle={{
-								backgroundColor: "rgba(31, 41, 55, 0.8)",
-								borderColor: "#4B5563",
-							}}
-							itemStyle={{ color: "#E5E7EB" }}
-						/>
-					</RadarChart>
-				</ResponsiveContainer>
-			</div>
-		</motion.div>
-	);
+const EngineeringObjectsRadarChart = () => {
+  return (
+    <motion.div
+      className="bg-white shadow-lg rounded-xl p-6 border border-gray-300"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 }}
+    >
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        Distribución de Visitas a Objetos de Ingeniería
+      </h2>
+      <div style={{ width: "100%", height: 500 }}>
+        <ResponsiveContainer>
+          <RadarChart
+            cx="50%"
+            cy="50%"
+            outerRadius="65%" // Radio ajustado para equilibrar espacio y legibilidad
+            data={engineeringData}
+          >
+            <PolarGrid stroke="#374151" />
+            <PolarAngleAxis
+              dataKey="name"
+              stroke="#4B5563"
+              tick={{ fontSize: 11 }} // Fuente ligeramente reducida para ajuste
+            />
+            <PolarRadiusAxis angle={30} domain={[0, 150]} stroke="#9CA3AF" />
+            <Radar
+              name="visitantes"
+              dataKey="visitas"
+              stroke="#4CAF50"
+              fill="#4CAF50"
+              fillOpacity={0.6}
+            />
+            <Tooltip
+              formatter={(value) => [`${value} visitas`]}
+              contentStyle={{
+                backgroundColor: "rgba(31, 41, 55, 0.8)",
+                borderColor: "#4B5563",
+              }}
+              itemStyle={{ color: "#E5E7EB" }}
+            />
+            <Legend />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+    </motion.div>
+  );
 };
-export default CustomerSegmentation;
+
+export default EngineeringObjectsRadarChart;
