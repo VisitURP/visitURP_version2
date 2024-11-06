@@ -7,25 +7,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SemesterController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
-*/
-
 Route::get('/semesters', [SemesterController::class, 'index']);
 Route::post('/semesters', [SemesterController::class, 'store']);
+Route::put('/semesters/{semester}', [SemesterController::class, 'update']);
+Route::put('/semesters/{id}', [SemesterController::class, 'update']);
+Route::delete('/semesters/{semester}', [SemesterController::class, 'destroy']); // Para eliminar
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::apiResource('survey', SurveyController::class);
-
     Route::get('/dashboard', [DashboardController::class, 'index']);
 });
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './Semesters.css';
+import { FaEdit, FaTrashAlt } from 'react-icons/fa';
 
 export default function Semesters() {
   const [semesters, setSemesters] = useState([]);
@@ -7,6 +8,10 @@ export default function Semesters() {
   const [semesterName, setSemesterName] = useState('');
   const [until, setUntil] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [semesterToEdit, setSemesterToEdit] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [semesterToDelete, setSemesterToDelete] = useState(null);
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters`)
@@ -20,6 +25,7 @@ export default function Semesters() {
       semesterName,
       until,
       created_at: new Date().toISOString(),
+
     };
 
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters`, {
@@ -36,6 +42,7 @@ export default function Semesters() {
         throw new Error('Error al registrar el nuevo semestre');
       })
       .then((data) => {
+        console.log(data); // Verifica la respuesta aquí
         setSemesters([...semesters, data]);
         setIsModalOpen(false);
         setSemesterName('');
@@ -44,9 +51,64 @@ export default function Semesters() {
       .catch((error) => console.error('Error:', error));
   };
 
+  const handleUpdateSemester = () => {
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters/${semesterToEdit.id_semester}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        semesterName: semesterToEdit.semesterName,
+        until: semesterToEdit.until,
+      }),
+    })
+      .then((response) => {
+        if (response.ok) return response.json();
+        throw new Error('Error al actualizar el semestre');
+      })
+      .then((updatedSemester) => {
+        // Actualiza la lista de semestres en el estado
+        setSemesters((prevSemesters) =>
+          prevSemesters.map((semester) =>
+            semester.id_semester === updatedSemester.id_semester ? updatedSemester : semester
+          )
+        );
+        setIsEditModalOpen(false);
+      })
+      .catch((error) => console.error('Error al actualizar el semestre:', error));
+  };
+
+  const handleEditClick = (semester) => {
+    setSemesterToEdit(semester);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (semester) => {
+    setSemesterToDelete(semester);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters/${semesterToDelete.id_semester}`, {
+      method: 'DELETE',
+    })
+      .then((response) => {
+        if (response.ok) {
+          setSemesters((prevSemesters) =>
+            prevSemesters.filter((semester) => semester.id_semester !== semesterToDelete.id_semester)
+          );
+          setIsDeleteModalOpen(false);
+        } else {
+          throw new Error('Error al eliminar el semestre');
+        }
+      })
+      .catch((error) => console.error('Error:', error));
+  };
+
   const filteredSemesters = selectedSemester
     ? semesters.filter((semester) => semester.semesterName === selectedSemester)
     : semesters;
+
 
   return (
     <div className="semesters-container">
@@ -100,29 +162,88 @@ export default function Semesters() {
         </div>
       )}
       <table className="semesters-table">
-        <thead>
-          <tr>
-            <th>ID Semestre</th>
-            <th>Nombre del Semestre</th>
-            <th>Hasta</th>
-            <th>Creado En</th>
-            <th>Actualizado En</th>
-            <th>Eliminado En</th>
-          </tr>
-        </thead>
-        <tbody>
+  <thead>
+    <tr>
+      <th>ID Semestre</th>
+      <th>Nombre del Semestre</th>
+      <th>Hasta</th>
+      <th>Última Modificación</th>
+      <th>Otras Opciones</th> {/* Nuevo encabezado */}
+    </tr>
+  </thead>
+  <tbody>
           {filteredSemesters.map((semester) => (
             <tr key={semester.id_semester}>
               <td>{semester.id_semester}</td>
               <td>{semester.semesterName}</td>
               <td>{semester.until}</td>
-              <td>{semester.created_at}</td>
               <td>{semester.updated_at}</td>
-              <td>{semester.deleted_at || 'No Eliminado'}</td>
+              <td className="icon-buttons">
+                <button
+                  className="edit-button"
+                  onClick={() => handleEditClick(semester)}
+                >
+                  <FaEdit />
+                </button>
+                {isEditModalOpen && (
+                  <div className="modale">
+                    <div className="modale-content">
+                      <h2 className="modale-title">Editar Semestre</h2>
+                      <label className="modale-label1">
+                        Nombre del Semestre:
+                        <input
+                          className="modale-input1"
+                          type="text"
+                          value={semesterToEdit?.semesterName || ''}
+                          onChange={(e) =>
+                            setSemesterToEdit((prev) => ({
+                              ...prev,
+                              semesterName: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                      <label className="modale-label2">
+                        Fecha Hasta:
+                        <input
+                          className="modale-input2"
+                          type="datetime-local"
+                          value={semesterToEdit?.until || ''}
+                          onChange={(e) =>
+                            setSemesterToEdit((prev) => ({
+                              ...prev,
+                              until: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                      <button className="modale-btn1" onClick={handleUpdateSemester}>
+                        Guardar Cambios
+                      </button>
+                      <button className="modale-btn2" onClick={() => setIsEditModalOpen(false)}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <button className="delete-button" onClick={() => handleDeleteClick(semester)}>
+                   <FaTrashAlt />
+                    </button>
+                {isDeleteModalOpen && (
+       <div className="modal-delete">
+        <div className="modal-content-delete">
+         <h2 className="modal-title-delete">Eliminar Semestre</h2>
+         <p className="modal-p-delete">¿Estás seguro de que deseas eliminar el semestre "{semesterToDelete?.semesterName}"?</p>
+         <button className="modal-btn-confirm" onClick={handleConfirmDelete}>Confirmar</button>
+         <button className="modal-btn-cancel-delete" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</button>
+        </div>
+       </div>
+   )}
+              </td>
             </tr>
           ))}
         </tbody>
-      </table>
+    </table>
     </div>
   );
 }

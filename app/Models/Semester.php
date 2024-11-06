@@ -10,5 +10,10 @@ class Semester extends Model
     use HasFactory;
 
     protected $table = 'semesters'; // Nombre de la tabla en la base de datos
-    // Puedes agregar otras configuraciones aquí, como columnas fillable si deseas hacer operaciones de guardado
+    protected $primaryKey = 'id_semester'; // Establece 'id_semester' como la clave primaria
+
+    public $timestamps = true; // Habilita los timestamps (created_at, updated_at)
+    
+    // Si deseas, puedes definir las propiedades fillable para asignación masiva
+    protected $fillable = ['semesterName', 'until']; // Permite asignar estos campos
 }
