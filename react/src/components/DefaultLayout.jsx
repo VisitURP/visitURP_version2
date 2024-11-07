@@ -23,7 +23,7 @@ import { CogIcon } from "lucide-react";
 // Navigation items with dropdowns for Visitantes and Preguntas
 const navigation = [
   { name: "DASHBOARD", to: "/", icon: HomeIcon },
-  { name: "SURVEYS", to: "/surveys", icon: ClipboardIcon },
+ // { name: "SURVEYS", to: "/surveys", icon: ClipboardIcon },
   {
     name: "VISITANTES",
     icon: UsersIcon,
