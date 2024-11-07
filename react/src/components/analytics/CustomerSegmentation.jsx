@@ -47,12 +47,12 @@ const EngineeringObjectsRadarChart = () => {
       <h2 className="text-xl font-semibold text-gray-900 mb-4">
         Distribución de Visitas a Objetos de Ingeniería
       </h2>
-      <div style={{ width: "100%", height: 500 }}>
+      <div style={{ width: "100%", height: 450 }}>
         <ResponsiveContainer>
           <RadarChart
             cx="50%"
-            cy="50%"
-            outerRadius="65%" // Radio ajustado para equilibrar espacio y legibilidad
+            cy="45%"
+            outerRadius="70%" // Radio ajustado para equilibrar espacio y legibilidad
             data={engineeringData}
           >
             <PolarGrid stroke="#374151" />
@@ -77,7 +77,8 @@ const EngineeringObjectsRadarChart = () => {
               }}
               itemStyle={{ color: "#E5E7EB" }}
             />
-            <Legend />
+            <Legend wrapperStyle={{ top: 395, left: 0, paddingTop: 10 }} />{" "}
+            {/* Ajuste aquí */}
           </RadarChart>
         </ResponsiveContainer>
       </div>
