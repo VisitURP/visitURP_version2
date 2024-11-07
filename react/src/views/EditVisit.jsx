@@ -6,25 +6,30 @@ import TButton from "../components/core/TButton";
 import PageComponent from "../components/PageComponent";
 
 export default function EditVisit() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [formData, setFormData] = useState({
-    ID_Visitante: "",
-    Fecha_Visita: "",
-    Hora_Visita: "",
-    Semestre: "",
-    Provincia_O: "",
-    Estado: ""
+    id_visitorP: "",
+    name: "",
+    lastName: "",
+    email: "",
+    docNumber: "",
+    phone: "",
+    cod_Ubigeo: "",
+    educationalInstitution: "",
+    birthDate: "",
+    gender: "",
   });
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (location.state && location.state.visitData) {
-      setFormData(location.state.visitData);
-    }
-  }, [location.state]);
-
+  if (location.state && location.state.visitData) {
+    console.log("Datos recibidos:", location.state.visitData);
+    setFormData(location.state.visitData);
+  }
+}, [location.state]);
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
@@ -32,14 +37,14 @@ export default function EditVisit() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-      const [hours, minutes] = formData.Hora_Visita.split(':');
-      const updatedFormData = {
-        ...formData,
-        Hora_Visita: `${hours}:${minutes}:00`, };
+
+    const updatedFormData = {
+      ...formData,
+      updated_at: new Date().toLocaleString(), 
+    };
 
     try {
-        const response = await axiosClient.put(`/visit/${updatedFormData.ID_Visitante}`, updatedFormData);
+      const response = await axiosClient.put(`/visit/${formData.id_visitorP}`, updatedFormData);
 
       if (response.status === 200) {
         setShowModal(true);
@@ -49,7 +54,7 @@ export default function EditVisit() {
       }
     } catch (error) {
       if (error.response) {
-        console.error("Error en la solicitud de actu:", error.response.data);
+        console.error("Error en la solicitud de actualización:", error.response.data);
         setError(`Error en la solicitud: ${error.response.data.message || 'Error desconocido'}`);
       } else if (error.request) {
         console.error("Error en la solicitud:", error.request);
@@ -71,20 +76,24 @@ export default function EditVisit() {
   };
 
   return (
-    <PageComponent title="Editar Visita Presencial">
+    <PageComponent title="Editar Información de Visitante">
       <form className="shadow sm:overflow-hidden sm:rounded-md bg-white p-6" onSubmit={handleSubmit}>
         <div className="mb-4 text-gray-600">
-          Edita los datos de la visita y guarda los cambios.
+          Edita los datos del visitante y guarda los cambios.
         </div>
         {error && <div className="bg-red-500 text-white py-3 px-3">{error}</div>}
 
-        {[
-          { label: "Identificación de Visitante", name: "ID_Visitante", readOnly: true },
-          { label: "Fecha de Visita", name: "Fecha_Visita", type: "date" },
-          { label: "Hora de Visita", name: "Hora_Visita", type: "time" },
-          { label: "Semestre Académico", name: "Semestre" },
-          { label: "Provincia de Origen", name: "Provincia_O" },
-          { label: "Estado", name: "Estado" },
+        {[ 
+          { label: "ID Visitante", name: "id_visitorP", readOnly: true }, 
+          { label: "Nombre", name: "name" }, 
+          { label: "Apellido", name: "lastName" }, 
+          { label: "Email", name: "email", type: "email" },
+          { label: "Documento", name: "docNumber" },
+          { label: "Celular", name: "phone" },
+          { label: "Código Ubigeo", name: "cod_Ubigeo" },
+          { label: "Instituto de Educación", name: "educationalInstitution" },
+          { label: "Fecha de Nacimiento", name: "birthDate", type: "date" },
+          { label: "Género", name: "gender" },
         ].map(({ label, name, type = "text", readOnly = false }) => (
           <div key={name} className="mb-4 flex items-center space-x-2">
             <label className="block text-sm font-medium text-gray-700 w-1/3" htmlFor={name}>
@@ -124,10 +133,10 @@ export default function EditVisit() {
         <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-75 z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg text-center w-[400px]">
             <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mx-auto mb-4">
-              <FaCheckCircle className="text-4xl text-green-600" /> 
+              <FaCheckCircle className="text-4xl text-green-600" />
             </div>
             <h2 className="text-lg font-bold mt-4">Cambios guardados</h2>
-            <p className="text-gray-600 mt-2">El registro ha sido actualizada correctamente.</p>
+            <p className="text-gray-600 mt-2">El registro del visitante ha sido actualizado correctamente.</p>
             <button
               onClick={closeModal}
               className="mt-6 bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 transition duration-200"

@@ -13,58 +13,76 @@ class VisitPController extends Controller
     }
     public function store(Request $request)
     {
-        try {
-            $validated = $request->validate([
-                'ID_Visitante' => 'required|string|max:255|unique:visitp',
-                'Fecha_Visita' => 'required|date',
-                'Hora_Visita' => 'required|date_format:H:i',
-                'Semestre' => 'required|string|max:255',
-                'Provincia_O' => 'required|string|max:255',
-            ]);
-    
-            VisitP::create($validated);
-    
-            return response()->json(['message' => 'Visita registrada exitosamente'], 201);
-        } catch (ValidationException $e) {
-            return $this->invalidJson($request, $e); // Usar tu método para manejar errores de validación
-        }
+    try {
+        $validated = $request->validate([
+            'name' => 'required|string|max:500',
+            'lastName' => 'required|string|max:500',
+            'email' => 'required|email|max:500',
+            'docNumber' => 'required|string|max:500',
+            'phone' => 'nullable|string|max:500',
+            'cod_Ubigeo' => 'nullable|string|max:255',
+            'educationalInstitution' => 'nullable|string|max:500',
+            'gender' => 'required|in:F,M',
+            'birthDate' => 'required|date',
+        ]);
+
+        $validated['fk_docType_id'] = is_numeric($validated['docNumber']) ? 1 : 2;
+
+        $validated['created_at'] = now();
+        $validated['updated_at'] = now();
+
+        VisitP::create($validated);
+
+        return response()->json(['message' => 'Visita registrada exitosamente'], 201);}
+        catch (ValidationException $e) {
+        return $this->invalidJson($request, $e); }
     }
     public function invalidJson($request, ValidationException $exception)
     {
         return response()->json(['errors' => $exception->validator->errors(),], 422);
     }
 
-    public function destroy($id)
-    {
-        $visit = VisitP::find($id);
-    
-        if (!$visit) {
-        return response()->json(['message' => 'Visitante no encontrado'], 404);}
-    
-        $visit->delete();
-    
-        return response()->json(['message' => 'Visitante eliminado exitosamente']);
+    public function softDelete(Request $request, $id)
+{
+    $visit = VisitP::find($id);
+
+    if (!$visit) {
+        return response()->json(['message' => 'Visitante no encontrado'], 404);
     }
+
+    $visit->deleted_at = now();
+    $visit->save();
+
+    return response()->json(['message' => 'Visitante marcado como eliminado']);
+}
     public function update(Request $request, $id)
-    {
-        $validatedData = $request->validate([
-        'Fecha_Visita' => 'required|date',
-        'Hora_Visita' => 'required|date_format:H:i:s',
-        'Semestre' => 'required|string|max:10',
-        'Provincia_O' => 'required|string|max:50',
-        'Estado' => 'required|string|max:20',
+{
+    try {
+        $validated = $request->validate([
+            'name' => 'required|string|max:500',
+            'lastName' => 'required|string|max:500',
+            'email' => 'required|email|max:500',
+            'docNumber' => 'required|string|max:500',
+            'phone' => 'nullable|string|max:500',
+            'cod_Ubigeo' => 'nullable|string|max:255',
+            'educationalInstitution' => 'nullable|string|max:500',
+            'gender' => 'required|in:F,M',
+            'birthDate' => 'required|date',
         ]);
 
-        $visit = VisitP::findOrFail($id);
+        $validated['fk_docType_id'] = is_numeric($validated['docNumber']) ? 1 : 2;
+        $validated['updated_at'] = now();
 
-        $visit->Fecha_Visita = $validatedData['Fecha_Visita'];
-        $visit->Hora_Visita = $validatedData['Hora_Visita'];
-        $visit->Semestre = $validatedData['Semestre'];
-        $visit->Provincia_O = $validatedData['Provincia_O'];
-        $visit->Estado = $validatedData['Estado'];
+        $visitor = VisitP::find($id);
+        if (!$visitor) {
+            return response()->json(['message' => 'Visitante no encontrado'], 404);
+        }
 
-        $visit->save();
+        $visitor->update($validated);
 
-        return response()->json(['message' => 'Visita actualizada correctamente'], 200);
+        return response()->json(['message' => 'Visita actualizada exitosamente']);
+    } catch (Exception $e) {
+        return response()->json(['message' => 'Error al actualizar la visita', 'error' => $e->getMessage()], 500);
     }
+}
 }
