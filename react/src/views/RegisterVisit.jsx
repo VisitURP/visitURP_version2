@@ -21,7 +21,7 @@ export default function RegisterVisit() {
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [showDuplicateModal, setShowDuplicateModal] = useState(false); // Modal para datos duplicados
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false); // Modal para duplicados de docNumber
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -71,7 +71,8 @@ export default function RegisterVisit() {
         }
         setShowErrorModal(true);
         setShowModal(false);
-      } else if (response.status === 409 && responseData.message.includes("name and lastName")) {
+      } else if (response.status === 409 && responseData.message.includes("docNumber")) {
+        // Solo muestra el modal de duplicado si el error incluye 'docNumber'
         setShowDuplicateModal(true);
         setShowErrorModal(false);
         setShowModal(false);
@@ -106,16 +107,7 @@ export default function RegisterVisit() {
         </div>
         {error && <div className="bg-red-500 text-white py-3 px-3">{error}</div>}
 
-        {[
-          { label: "Nombre", name: "name" },
-          { label: "Apellido", name: "lastName" },
-          { label: "Email", name: "email", type: "email" },
-          { label: "Documento", name: "docNumber" },
-          { label: "Celular", name: "phone" },
-          { label: "Código Ubigeo", name: "cod_Ubigeo" },
-          { label: "Instituto Educación", name: "educationalInstitution" },
-          { label: "Fecha Nacimiento", name: "birthDate", type: "date" }
-        ].map(({ label, name, type = "text" }) => (
+        {[ /* Inputs for user data here */ ].map(({ label, name, type = "text" }) => (
           <div key={name} className="mb-4 flex items-center space-x-2">
             <label className="block text-sm font-medium text-gray-700 w-1/3" htmlFor={name}>
               {label}
@@ -172,7 +164,7 @@ export default function RegisterVisit() {
       )}
 
       {showDuplicateModal && (
-        <Modal icon={<FaExclamationTriangle className="text-4xl text-yellow-600" />} title="Error: Datos ya registrados" onClose={closeDuplicateModal} message="El visitante ya está registrado en el sistema." />
+        <Modal icon={<FaExclamationTriangle className="text-4xl text-yellow-600" />} title="Error: Documento ya registrado" onClose={closeDuplicateModal} message="El número de documento ya está registrado en el sistema." />
       )}
     </PageComponent>
   );

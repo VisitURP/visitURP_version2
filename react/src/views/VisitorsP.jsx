@@ -43,7 +43,7 @@ export default function VisitorsP() {
   
     try {
       const response = await axiosClient.put(`/visit/${selectedVisitor.id_visitorP}/soft-delete`, {
-        deleted_at: new Date().toLocaleString(),  // Se pasa la fecha y hora actual
+        deleted_at: new Date().toLocaleString(),  
       });
   
       setVisitors((prevVisitors) =>
