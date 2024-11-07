@@ -1,4 +1,3 @@
-
 import {
   BarChart,
   Bar,
@@ -10,29 +9,53 @@ import {
   Legend,
 } from "recharts";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-// Datos de visitantes por interés académico
-const visitorData = [
-  { name: "URP", visitantes: 200 },
-  { name: "Informática", visitantes: 90 },
-  { name: "Industrial", visitantes: 100 },
-  { name: "Civil", visitantes: 120 },
-  { name: "Mecatrónica", visitantes: 85 },
-  { name: "Electrónica", visitantes: 80 },
-  { name: "Fac. Ing.", visitantes: 150 },
-  { name: "FAU", visitantes: 110 }, // Facultad de Arquitectura y Urbanismo
-  { name: "FMH", visitantes: 130 }, // Facultad de Medicina Humana
-  { name: "FACEE", visitantes: 95 }, // Facultad de Ciencias Económicas y Empresariales
-  { name: "FHLM", visitantes: 40 }, // Facultad de Humanidades y Lenguas Modernas
-  { name: "FCB", visitantes: 50 }, // Facultad de Ciencias Biológicas
-  { name: "FDC", visitantes: 90 }, // Facultad de Derecho y Ciencia Política
-  { name: "FP", visitantes: 80 }, // Facultad de Psicología
-];
+// Mapeo de nombres completos a abreviaciones
+const abbreviations = {
+  "Universidad Ricardo Palma": "URP",
+  "Facultad de Ingeniería": "Fac. Ing.",
+  "Facultad de Arquitectura y Urbanismo": "FAU",
+  "Facultad de Medicina Humana": "FMH",
+  "Facultad de Ciencias Económicas y Empresariales": "FACEE",
+  "Facultad de Humanidades y Lenguas Modernas": "FHLM",
+  "Facultad de Ciencias Biológicas": "FCB",
+  "Facultad de Derecho y Ciencia Política": "FDC",
+  "Facultad de Psicología": "FP",
+  // Añade más abreviaciones según sea necesario
+};
 
 // Color para las barras
 const COLORS = "#4CAF50";
 
 const VisitorDistribution = () => {
+  const [visitorData, setVisitorData] = useState([]);
+
+  useEffect(() => {
+    const fetchVisitorData = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost/visitURP_Backend/public/index.php/api/academic-interests/count"
+        );
+        const apiData = response.data.academic_interests;
+
+        // Transformar los datos de la API al formato esperado por el gráfico
+        const formattedData = apiData.map((item) => ({
+          name: abbreviations[item.career_name] || item.career_name, // Usa la abreviatura si existe
+          fullName: item.career_name, // Nombre completo de la carrera/facultad
+          visitantes: item.count, // Número de visitantes
+        }));
+
+        setVisitorData(formattedData);
+      } catch (error) {
+        console.error("Error al obtener los datos de la API:", error);
+      }
+    };
+
+    fetchVisitorData();
+  }, []);
+
   return (
     <motion.div
       className="bg-white shadow-lg rounded-xl p-6 border border-gray-300"
@@ -43,14 +66,12 @@ const VisitorDistribution = () => {
       <h2 className="text-xl font-semibold text-[#282424] mb-4">
         Distribución de Visitantes por Intereses Académicos
       </h2>
-      <div style={{ width: "100%", height: 500 }}>
-        {" "}
-        {/* Altura reducida */}
+      <div style={{ width: "100%", height: 430 }}>
         <ResponsiveContainer>
           <BarChart
             data={visitorData}
             layout="vertical"
-            margin={{ top: 20, right: 40, left: 20, bottom: 40 }}
+            margin={{ top: 40, right: 60 }}
             barSize={20}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
@@ -58,13 +79,13 @@ const VisitorDistribution = () => {
             <YAxis
               dataKey="name"
               type="category"
-              width={90} // Ajuste de ancho para espacio de nombres
+              width={100} // Ajuste de ancho para más espacio horizontal
               tick={{ fontSize: 12 }}
             />
             <Tooltip
               formatter={(value, name, props) => [
                 `${value} visitantes`,
-                props.payload.name,
+                props.payload.fullName, // Muestra el nombre completo en el tooltip
               ]}
               contentStyle={{
                 backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -75,7 +96,7 @@ const VisitorDistribution = () => {
             <Legend
               verticalAlign="bottom"
               align="center"
-              wrapperStyle={{ paddingTop: 20 }}
+              wrapperStyle={{ paddingTop: 20, textAlign:"center", paddingLeft:70  }}
             />
             <Bar
               dataKey="visitantes"
@@ -91,5 +112,3 @@ const VisitorDistribution = () => {
 };
 
 export default VisitorDistribution;
-
-
