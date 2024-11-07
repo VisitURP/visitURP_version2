@@ -95,7 +95,11 @@ export default function Semesters() {
       .then((response) => {
         if (response.ok) {
           setSemesters((prevSemesters) =>
-            prevSemesters.filter((semester) => semester.id_semester !== semesterToDelete.id_semester)
+            prevSemesters.map((semester) =>
+              semester.id_semester === semesterToDelete.id_semester
+                ? { ...semester, deleted_at: new Date().toISOString() }
+                : semester
+            )
           );
           setIsDeleteModalOpen(false);
         } else {
@@ -106,8 +110,12 @@ export default function Semesters() {
   };
 
   const filteredSemesters = selectedSemester
-    ? semesters.filter((semester) => semester.semesterName === selectedSemester)
-    : semesters;
+  ? semesters.filter(
+      (semester) =>
+        semester.semesterName === selectedSemester && semester.deleted_at === null
+    )
+  : semesters.filter((semester) => semester.deleted_at === null);
+
 
 
   return (

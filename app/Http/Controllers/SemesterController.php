@@ -9,10 +9,7 @@ class SemesterController extends Controller
 {
     public function index()
     {
-        // Obtener todos los registros de la tabla de semestres
-        $semesters = Semester::all();
-
-        // Devolver los registros en formato JSON
+        $semesters = Semester::whereNull('deleted_at')->get();
         return response()->json($semesters);
     }
     public function store(Request $request)
@@ -54,14 +51,15 @@ class SemesterController extends Controller
 
     // Agrega el método para eliminar si no lo tienes
     public function destroy($id)
-    {
-        $semester = Semester::find($id);
-        if (!$semester) {
-            return response()->json(['error' => 'Semestre no encontrado'], 404);
-        }
-
-        $semester->delete(); // O puedes usar softDeletes si tienes configurado
-
-        return response()->json(['message' => 'Semestre eliminado exitosamente']);
+{
+    $semester = Semester::find($id);
+    if (!$semester) {
+        return response()->json(['error' => 'Semestre no encontrado'], 404);
     }
+
+    $semester->deleted_at = now(); // Marca la fecha de eliminación
+    $semester->save();
+
+    return response()->json(['message' => 'Semestre marcado como eliminado exitosamente']);
+}
 }

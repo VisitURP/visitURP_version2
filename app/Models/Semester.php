@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Semester extends Model
 {
@@ -16,4 +17,8 @@ class Semester extends Model
     
     // Si deseas, puedes definir las propiedades fillable para asignación masiva
     protected $fillable = ['semesterName', 'until']; // Permite asignar estos campos
+    
+    use SoftDeletes;
+
+    protected $dates = ['deleted_at'];
 }
