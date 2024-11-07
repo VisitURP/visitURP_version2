@@ -35,7 +35,7 @@ const OverviewCards = () => {
           femaleVisitors,
         ] = await Promise.all([
           axios.get(
-            "http://localhost/visitURP_Backend/public/index.php/api/getVisitorBySemester/2024-2"
+            "http://localhost/visitURP_Backend/public/index.php/api/total-visitors"
           ),
           axios.get(
             "http://localhost/visitURP_Backend/public/index.php/api/inquiries-ToAnswer"
@@ -55,7 +55,7 @@ const OverviewCards = () => {
         setOverviewData([
           {
             name: "Visitantes Totales",
-            value: totalVisitors.data.count || "0", // Adjust as needed based on API response
+            value: totalVisitors.data || "0", // Adjust as needed based on API response
             change: 8.3,
             icon: Users,
           },

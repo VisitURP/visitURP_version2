@@ -1,37 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import './Semesters.css';
-import { FaEdit, FaTrashAlt } from 'react-icons/fa';
+import React, { useEffect, useState } from "react";
+import { FaEdit, FaTrashAlt } from "react-icons/fa";
 
 export default function Semesters() {
   const [semesters, setSemesters] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [semesterName, setSemesterName] = useState('');
-  const [until, setUntil] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('');
+  const [semesterYear, setSemesterYear] = useState(new Date().getFullYear());
+  const [semesterSuffix, setSemesterSuffix] = useState(0);
+  const [until, setUntil] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [semesterToEdit, setSemesterToEdit] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [semesterToDelete, setSemesterToDelete] = useState(null);
 
-  useEffect(() => {
+  const fetchSemesters = () => {
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters`)
       .then((response) => response.json())
       .then((data) => setSemesters(data))
-      .catch((error) => console.error('Error al obtener los semestres:', error));
+      .catch((error) =>
+        console.error("Error al obtener los semestres:", error)
+      );
+  };
+
+  useEffect(() => {
+    fetchSemesters();
   }, []);
 
   const handleAddSemester = () => {
+    const semesterName = `${semesterYear}-${semesterSuffix}`;
     const newSemester = {
       semesterName,
       until,
       created_at: new Date().toISOString(),
-
     };
 
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(newSemester),
     })
@@ -39,219 +45,298 @@ export default function Semesters() {
         if (response.ok) {
           return response.json();
         }
-        throw new Error('Error al registrar el nuevo semestre');
+        throw new Error("Error al registrar el nuevo semestre");
       })
-      .then((data) => {
-        console.log(data); // Verifica la respuesta aquí
-        setSemesters([...semesters, data]);
+      .then(() => {
+        fetchSemesters();
         setIsModalOpen(false);
-        setSemesterName('');
-        setUntil('');
+        setSemesterSuffix(0);
+        setUntil("");
       })
-      .catch((error) => console.error('Error:', error));
+      .catch((error) => console.error("Error:", error));
   };
 
   const handleUpdateSemester = () => {
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters/${semesterToEdit.id_semester}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        semesterName: semesterToEdit.semesterName,
-        until: semesterToEdit.until,
-      }),
-    })
+    fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/semesters/${
+        semesterToEdit.id_semester
+      }`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          semesterName: semesterToEdit.semesterName,
+          until: semesterToEdit.until,
+        }),
+      }
+    )
       .then((response) => {
         if (response.ok) return response.json();
-        throw new Error('Error al actualizar el semestre');
+        throw new Error("Error al actualizar el semestre");
       })
-      .then((updatedSemester) => {
-        // Actualiza la lista de semestres en el estado
-        setSemesters((prevSemesters) =>
-          prevSemesters.map((semester) =>
-            semester.id_semester === updatedSemester.id_semester ? updatedSemester : semester
-          )
-        );
+      .then(() => {
+        fetchSemesters();
         setIsEditModalOpen(false);
       })
-      .catch((error) => console.error('Error al actualizar el semestre:', error));
-  };
-
-  const handleEditClick = (semester) => {
-    setSemesterToEdit(semester);
-    setIsEditModalOpen(true);
-  };
-
-  const handleDeleteClick = (semester) => {
-    setSemesterToDelete(semester);
-    setIsDeleteModalOpen(true);
+      .catch((error) =>
+        console.error("Error al actualizar el semestre:", error)
+      );
   };
 
   const handleConfirmDelete = () => {
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters/${semesterToDelete.id_semester}`, {
-      method: 'DELETE',
-    })
+    fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/semesters/${
+        semesterToDelete.id_semester
+      }`,
+      {
+        method: "DELETE",
+      }
+    )
       .then((response) => {
         if (response.ok) {
-          setSemesters((prevSemesters) =>
-            prevSemesters.map((semester) =>
-              semester.id_semester === semesterToDelete.id_semester
-                ? { ...semester, deleted_at: new Date().toISOString() }
-                : semester
-            )
-          );
+          fetchSemesters();
           setIsDeleteModalOpen(false);
         } else {
-          throw new Error('Error al eliminar el semestre');
+          throw new Error("Error al eliminar el semestre");
         }
       })
-      .catch((error) => console.error('Error:', error));
+      .catch((error) => console.error("Error:", error));
   };
 
   const filteredSemesters = selectedSemester
-  ? semesters.filter(
-      (semester) =>
-        semester.semesterName === selectedSemester && semester.deleted_at === null
-    )
-  : semesters.filter((semester) => semester.deleted_at === null);
-
-
+    ? semesters.filter(
+        (semester) =>
+          semester.semesterName === selectedSemester &&
+          semester.deleted_at === null
+      )
+    : semesters.filter((semester) => semester.deleted_at === null);
 
   return (
-    <div className="semesters-container">
-      <h1 className="semesters-title">Gestionar Semestres Académicos</h1>
-      <p className="semesters-description">
-        Puedes agregar nuevos semestres académicos, eliminar o modificar los existentes.
+    <div className="flex-1 overflow-auto relative z-10 bg-gray-100 p-8">
+      <h1 className="text-4xl font-bold text-center mb-6 bg-white border border-black rounded-lg py-5">
+        Gestionar Semestres Académicos
+      </h1>
+      <p className="text-lg text-gray-700 mb-12 text-center">
+        Puedes agregar nuevos semestres académicos, eliminar o modificar los
+        existentes.
       </p>
-      <div className="semesters-select">
-        <select id="semester-select" onChange={(e) => setSelectedSemester(e.target.value)}>
+      <div className="flex items-center space-x-4 mb-8">
+        <select
+          className="px-10 py-3 border rounded-lg text-gray-700"
+          onChange={(e) => setSelectedSemester(e.target.value)}
+        >
           <option value="">Seleccione un semestre</option>
           <option value="2024-2">2024-2</option>
           <option value="2024-1">2024-1</option>
-          <option value="2023-2">2023-2</option>
-          <option value="2023-1">2023-1</option>
-          <option value="2022-2">2022-2</option>
-          <option value="2022-1">2022-1</option>
+          <option value="2023-2">2024-0</option>
         </select>
-        <button 
-          className="semesters-button" 
-          onClick={() => setIsModalOpen(true)} 
+        <button
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-10 py-3 rounded-lg"
+          onClick={() => setIsModalOpen(true)}
         >
           Registrar nuevo semestre
         </button>
       </div>
-      {/* Modal */}
+
+      {/*Add modal*/}
       {isModalOpen && (
-        <div className="modal">
-          <div className="modal-content">
-            <h2 className="modal-title">Registrar Nuevo Semestre</h2>
-            <label className="modal-label1">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
+          <div className="bg-white p-8 rounded-lg w-full max-w-md shadow-lg">
+            <h2 className="text-2xl font-bold mb-4">
+              Registrar Nuevo Semestre
+            </h2>
+            <label className="block text-gray-700 font-semibold mb-2">
               Nombre del Semestre:
-              <input
-                className="modal-input1" // Clase para el input
-                type="text"
-                value={semesterName}
-                onChange={(e) => setSemesterName(e.target.value)} 
-              />
             </label>
-            <label className="modal-label2">
+            <div className="flex items-center space-x-4 mb-4">
+              <input
+                type="number"
+                value={semesterYear}
+                readOnly
+                className="w-2/3 px-4 py-2 border rounded-lg bg-gray-200"
+              />
+              <select
+                value={semesterSuffix}
+                onChange={(e) => setSemesterSuffix(e.target.value)}
+                className="w-1/3 px-4 py-2 border rounded-lg"
+              >
+                {[0, 1, 2].map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label className="block text-gray-700 font-semibold mb-2">
               Fecha Hasta:
-              <input
-                className="modal-input2"
-                type="datetime-local"
-                value={until}
-                onChange={(e) => setUntil(e.target.value)}
-              />
             </label>
-            <button className="modal-btn1" onClick={handleAddSemester}>Agregar Semestre</button>
-            <button className="modal-btn2" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+            <input
+              type="datetime-local"
+              value={until}
+              onChange={(e) => setUntil(e.target.value)}
+              className="block w-full px-4 py-2 border rounded-lg mb-6"
+            />
+            <div className="flex justify-between">
+              <button
+                onClick={handleAddSemester}
+                className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg"
+              >
+                Agregar Semestre
+              </button>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}
-      <table className="semesters-table">
-  <thead>
-    <tr>
-      <th>ID Semestre</th>
-      <th>Nombre del Semestre</th>
-      <th>Hasta</th>
-      <th>Última Modificación</th>
-      <th>Otras Opciones</th> {/* Nuevo encabezado */}
-    </tr>
-  </thead>
-  <tbody>
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
+          <div className="bg-white p-8 rounded-lg w-full max-w-md shadow-lg">
+            <h2 className="text-2xl font-bold mb-4">Editar Semestre</h2>
+            <label className="block text-gray-700 font-semibold mb-2">
+              Nombre del Semestre:
+            </label>
+            <div className="flex items-center space-x-4 mb-4">
+              <input
+                type="number"
+                value={
+                  semesterToEdit?.semesterName?.split("-")[0] || semesterYear
+                }
+                readOnly
+                className="w-2/3 px-4 py-2 border rounded-lg bg-gray-200"
+              />
+              <select
+                value={
+                  semesterToEdit?.semesterName?.split("-")[1] || semesterSuffix
+                }
+                onChange={(e) =>
+                  setSemesterToEdit({
+                    ...semesterToEdit,
+                    semesterName: `${
+                      semesterToEdit.semesterName.split("-")[0] || semesterYear
+                    }-${e.target.value}`,
+                  })
+                }
+                className="w-1/3 px-4 py-2 border rounded-lg"
+              >
+                {[0, 1, 2].map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label className="block text-gray-700 font-semibold mb-2">
+              Fecha Hasta:
+            </label>
+            <input
+              type="datetime-local"
+              value={semesterToEdit?.until || ""}
+              onChange={(e) =>
+                setSemesterToEdit({ ...semesterToEdit, until: e.target.value })
+              }
+              className="block w-full px-4 py-2 border rounded-lg mb-6"
+            />
+            <div className="flex justify-between">
+              <button
+                onClick={handleUpdateSemester}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg"
+              >
+                Guardar Cambios
+              </button>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
+          <div className="bg-white p-8 rounded-lg w-full max-w-md shadow-lg">
+            <h2 className="text-2xl font-bold mb-6">Confirmar Eliminación</h2>
+            <p className="text-gray-700 mb-8">
+              ¿Está seguro de que desea eliminar el semestre{" "}
+              <strong>{semesterToDelete?.semesterName}</strong>?
+            </p>
+            <div className="flex justify-between">
+              <button
+                onClick={handleConfirmDelete}
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg"
+              >
+                Eliminar
+              </button>
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Tabla de Semestres */}
+      <table className="min-w-full border rounded-lg overflow-hidden">
+        <thead>
+          <tr className="bg-gray-200 text-gray-600 uppercase text-sm">
+            <th className="py-3 px-6 text-center">ID_Semestre</th>
+            <th className="py-3 px-6 text-center">Semestre Académico</th>
+            <th className="py-3 px-6 text-center">Fecha de terminación</th>
+            <th className="py-3 px-6 text-center">Última Actualización</th>
+            <th className="py-3 px-6 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
           {filteredSemesters.map((semester) => (
-            <tr key={semester.id_semester}>
-              <td>{semester.id_semester}</td>
-              <td>{semester.semesterName}</td>
-              <td>{semester.until}</td>
-              <td>{semester.updated_at}</td>
-              <td className="icon-buttons">
+            <tr
+              key={semester.id_semester}
+              className="text-center bg-white border-b"
+            >
+              <td className="py-4">{semester.id_semester}</td>
+              <td className="py-4">{semester.semesterName}</td>
+              <td className="py-4">
+                {new Date(semester.until).toLocaleDateString()}
+              </td>
+              <td className="py-4">
+                {new Date(semester.updated_at).toLocaleDateString()}
+              </td>
+              <td className="flex items-center justify-center space-x-4 py-4">
                 <button
-                  className="edit-button"
-                  onClick={() => handleEditClick(semester)}
+                  className="text-blue-500 hover:text-blue-700"
+                  onClick={() => {
+                    setSemesterToEdit(semester);
+                    setIsEditModalOpen(true);
+                  }}
                 >
                   <FaEdit />
                 </button>
-                {isEditModalOpen && (
-                  <div className="modale">
-                    <div className="modale-content">
-                      <h2 className="modale-title">Editar Semestre</h2>
-                      <label className="modale-label1">
-                        Nombre del Semestre:
-                        <input
-                          className="modale-input1"
-                          type="text"
-                          value={semesterToEdit?.semesterName || ''}
-                          onChange={(e) =>
-                            setSemesterToEdit((prev) => ({
-                              ...prev,
-                              semesterName: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                      <label className="modale-label2">
-                        Fecha Hasta:
-                        <input
-                          className="modale-input2"
-                          type="datetime-local"
-                          value={semesterToEdit?.until || ''}
-                          onChange={(e) =>
-                            setSemesterToEdit((prev) => ({
-                              ...prev,
-                              until: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
-                      <button className="modale-btn1" onClick={handleUpdateSemester}>
-                        Guardar Cambios
-                      </button>
-                      <button className="modale-btn2" onClick={() => setIsEditModalOpen(false)}>
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <button className="delete-button" onClick={() => handleDeleteClick(semester)}>
-                   <FaTrashAlt />
-                    </button>
-                {isDeleteModalOpen && (
-       <div className="modal-delete">
-        <div className="modal-content-delete">
-         <h2 className="modal-title-delete">Eliminar Semestre</h2>
-         <p className="modal-p-delete">¿Estás seguro de que deseas eliminar el semestre "{semesterToDelete?.semesterName}"?</p>
-         <button className="modal-btn-confirm" onClick={handleConfirmDelete}>Confirmar</button>
-         <button className="modal-btn-cancel-delete" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</button>
-        </div>
-       </div>
-   )}
+                <button
+                  className="text-red-500 hover:text-red-700"
+                  onClick={() => {
+                    setSemesterToDelete(semester);
+                    setIsDeleteModalOpen(true);
+                  }}
+                >
+                  <FaTrashAlt />
+                </button>
               </td>
             </tr>
           ))}
         </tbody>
-    </table>
+      </table>
     </div>
   );
 }
