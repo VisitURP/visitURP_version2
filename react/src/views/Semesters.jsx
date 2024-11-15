@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import { FaEdit, FaTrashAlt, FaInfoCircle } from "react-icons/fa";
 
 export default function Semesters() {
   const [semesters, setSemesters] = useState([]);
@@ -12,14 +12,66 @@ export default function Semesters() {
   const [semesterToEdit, setSemesterToEdit] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [semesterToDelete, setSemesterToDelete] = useState(null);
+  const [availableYears, setAvailableYears] = useState([
+    new Date().getFullYear(),
+  ]);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [latestSemester, setLatestSemester] = useState(null);
 
   const fetchSemesters = () => {
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters`)
       .then((response) => response.json())
-      .then((data) => setSemesters(data))
+      .then((data) => {
+        setSemesters(data);
+        updateAvailableYears(data);
+        autoSetNextSemester(data);
+
+        // Determinar el último semestre registrado
+        const sortedSemesters = [...data].sort((a, b) => {
+          const [yearA, suffixA] = a.semesterName.split("-").map(Number);
+          const [yearB, suffixB] = b.semesterName.split("-").map(Number);
+          return yearB - yearA || suffixB - suffixA;
+        });
+        setLatestSemester(sortedSemesters[0]);
+      })
       .catch((error) =>
         console.error("Error al obtener los semestres:", error)
       );
+  };
+
+  const updateAvailableYears = (semestersData) => {
+    const years = new Set(availableYears);
+    semestersData.forEach((semester) => {
+      const year = parseInt(semester.semesterName.split("-")[0]);
+      if (!isNaN(year)) {
+        years.add(year);
+      }
+    });
+    setAvailableYears(Array.from(years).sort());
+  };
+
+  const autoSetNextSemester = (semestersData) => {
+    const latestSemester = semestersData.reduce((latest, current) => {
+      const [currentYear, currentSuffix] = current.semesterName
+        .split("-")
+        .map(Number);
+      if (
+        currentYear > (latest.year || 0) ||
+        (currentYear === latest.year && currentSuffix > latest.suffix)
+      ) {
+        return { year: currentYear, suffix: currentSuffix };
+      }
+      return latest;
+    }, {});
+
+    if (latestSemester.suffix === 2) {
+      setSemesterYear(latestSemester.year + 1);
+      setSemesterSuffix(1);
+    } else {
+      setSemesterYear(latestSemester.year);
+      setSemesterSuffix(2);
+    }
   };
 
   useEffect(() => {
@@ -28,6 +80,17 @@ export default function Semesters() {
 
   const handleAddSemester = () => {
     const semesterName = `${semesterYear}-${semesterSuffix}`;
+
+    if (!until) {
+      setErrorMessage("Por favor ingrese la Fecha de Terminación.");
+      return;
+    }
+
+    if (semesters.some((s) => s.semesterName === semesterName)) {
+      setErrorMessage("El semestre ya existe.");
+      return;
+    }
+
     const newSemester = {
       semesterName,
       until,
@@ -36,24 +99,27 @@ export default function Semesters() {
 
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newSemester),
     })
       .then((response) => {
-        if (response.ok) {
-          return response.json();
-        }
+        if (response.ok) return response.json();
         throw new Error("Error al registrar el nuevo semestre");
       })
-      .then(() => {
+      .then((createdSemester) => {
         fetchSemesters();
         setIsModalOpen(false);
-        setSemesterSuffix(0);
+        setSemesterSuffix(1);
         setUntil("");
+        setErrorMessage("");
+        updateAvailableYears([createdSemester]);
       })
       .catch((error) => console.error("Error:", error));
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setErrorMessage("");
   };
 
   const handleUpdateSemester = () => {
@@ -108,47 +174,54 @@ export default function Semesters() {
   const filteredSemesters = selectedSemester
     ? semesters.filter(
         (semester) =>
-          semester.semesterName === selectedSemester &&
+          semester.semesterName.startsWith(selectedSemester) &&
           semester.deleted_at === null
       )
     : semesters.filter((semester) => semester.deleted_at === null);
 
+  const today = new Date().toISOString().split("T")[0];
+
   return (
     <div className="flex-1 overflow-auto relative z-10 bg-gray-100 p-8">
-      <h1 className="text-4xl font-bold text-center mb-6 bg-white border border-black rounded-lg py-5">
+      <h1 className="text-4xl font-bold text-[#282424] text-center mb-6 bg-white border border-gray-300 rounded-lg py-5">
         Gestionar Semestres Académicos
       </h1>
-      <p className="text-lg text-gray-700 mb-12 text-center">
+      <p className="text-lg text-gray-500 mb-12 text-center">
         Puedes agregar nuevos semestres académicos, eliminar o modificar los
         existentes.
       </p>
       <div className="flex items-center space-x-4 mb-8">
         <select
-          className="px-10 py-3 border rounded-lg text-gray-700"
+          className="px-12 py-3 border border-gray-300 rounded-lg text-gray-700 focus:ring-0"
           onChange={(e) => setSelectedSemester(e.target.value)}
         >
-          <option value="">Seleccione un semestre</option>
-          <option value="2024-2">2024-2</option>
-          <option value="2024-1">2024-1</option>
-          <option value="2023-2">2024-0</option>
+          <option value="">-- Todos los años --</option>
+          {availableYears.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
         </select>
         <button
-          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-10 py-3 rounded-lg"
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-3 rounded-lg"
           onClick={() => setIsModalOpen(true)}
         >
           Registrar nuevo semestre
         </button>
       </div>
 
-      {/*Add modal*/}
+      {/* Add Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
           <div className="bg-white p-8 rounded-lg w-full max-w-md shadow-lg">
             <h2 className="text-2xl font-bold mb-4">
               Registrar Nuevo Semestre
             </h2>
+            {errorMessage && (
+              <p className="text-red-500 text-center mb-4">{errorMessage}</p>
+            )}
             <label className="block text-gray-700 font-semibold mb-2">
-              Nombre del Semestre:
+              Nombre del Semestre
             </label>
             <div className="flex items-center space-x-4 mb-4">
               <input
@@ -162,7 +235,7 @@ export default function Semesters() {
                 onChange={(e) => setSemesterSuffix(e.target.value)}
                 className="w-1/3 px-4 py-2 border rounded-lg"
               >
-                {[0, 1, 2].map((option) => (
+                {[1, 2].map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
@@ -170,24 +243,29 @@ export default function Semesters() {
               </select>
             </div>
             <label className="block text-gray-700 font-semibold mb-2">
-              Fecha Hasta:
+              Fecha de Terminación
+              <FaInfoCircle
+                className="inline ml-2 text-blue-500"
+                title="Preferentemente ingrese la fecha de examen de admisión del semestre que se desea registrar"
+              />
             </label>
             <input
-              type="datetime-local"
+              type="date"
               value={until}
               onChange={(e) => setUntil(e.target.value)}
               className="block w-full px-4 py-2 border rounded-lg mb-6"
+              min={new Date().toISOString().split("T")[0]}
             />
-            <div className="flex justify-between">
+            <div className="flex justify-between space-x-4">
               <button
                 onClick={handleAddSemester}
-                className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg"
+                className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-lg w-1/2"
               >
                 Agregar Semestre
               </button>
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg"
+                onClick={handleCloseModal}
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-lg w-1/2"
               >
                 Cancelar
               </button>
@@ -195,50 +273,34 @@ export default function Semesters() {
           </div>
         </div>
       )}
+
       {/* Edit Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
           <div className="bg-white p-8 rounded-lg w-full max-w-md shadow-lg">
             <h2 className="text-2xl font-bold mb-4">Editar Semestre</h2>
             <label className="block text-gray-700 font-semibold mb-2">
-              Nombre del Semestre:
+              Año y Ciclo:
             </label>
             <div className="flex items-center space-x-4 mb-4">
               <input
-                type="number"
-                value={
-                  semesterToEdit?.semesterName?.split("-")[0] || semesterYear
-                }
+                type="text"
+                value={semesterToEdit?.semesterName || ""}
                 readOnly
-                className="w-2/3 px-4 py-2 border rounded-lg bg-gray-200"
+                className="w-full px-4 py-2 border rounded-lg bg-gray-200"
               />
-              <select
-                value={
-                  semesterToEdit?.semesterName?.split("-")[1] || semesterSuffix
-                }
-                onChange={(e) =>
-                  setSemesterToEdit({
-                    ...semesterToEdit,
-                    semesterName: `${
-                      semesterToEdit.semesterName.split("-")[0] || semesterYear
-                    }-${e.target.value}`,
-                  })
-                }
-                className="w-1/3 px-4 py-2 border rounded-lg"
-              >
-                {[0, 1, 2].map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
             </div>
             <label className="block text-gray-700 font-semibold mb-2">
               Fecha Hasta:
             </label>
             <input
-              type="datetime-local"
-              value={semesterToEdit?.until || ""}
+              type="date"
+              value={
+                semesterToEdit?.until
+                  ? new Date(semesterToEdit.until).toISOString().split("T")[0]
+                  : ""
+              }
+              min={today}
               onChange={(e) =>
                 setSemesterToEdit({ ...semesterToEdit, until: e.target.value })
               }
@@ -247,13 +309,13 @@ export default function Semesters() {
             <div className="flex justify-between">
               <button
                 onClick={handleUpdateSemester}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg"
+                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg w-1/2 mr-2"
               >
                 Guardar Cambios
               </button>
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg"
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg w-1/2"
               >
                 Cancelar
               </button>
@@ -288,11 +350,11 @@ export default function Semesters() {
           </div>
         </div>
       )}
+
       {/* Tabla de Semestres */}
       <table className="min-w-full border rounded-lg overflow-hidden">
         <thead>
           <tr className="bg-gray-200 text-gray-600 uppercase text-sm">
-            <th className="py-3 px-6 text-center">ID_Semestre</th>
             <th className="py-3 px-6 text-center">Semestre Académico</th>
             <th className="py-3 px-6 text-center">Fecha de terminación</th>
             <th className="py-3 px-6 text-center">Última Actualización</th>
@@ -300,41 +362,50 @@ export default function Semesters() {
           </tr>
         </thead>
         <tbody>
-          {filteredSemesters.map((semester) => (
-            <tr
-              key={semester.id_semester}
-              className="text-center bg-white border-b"
-            >
-              <td className="py-4">{semester.id_semester}</td>
-              <td className="py-4">{semester.semesterName}</td>
-              <td className="py-4">
-                {new Date(semester.until).toLocaleDateString()}
-              </td>
-              <td className="py-4">
-                {new Date(semester.updated_at).toLocaleDateString()}
-              </td>
-              <td className="flex items-center justify-center space-x-4 py-4">
-                <button
-                  className="text-blue-500 hover:text-blue-700"
-                  onClick={() => {
-                    setSemesterToEdit(semester);
-                    setIsEditModalOpen(true);
-                  }}
-                >
-                  <FaEdit />
-                </button>
-                <button
-                  className="text-red-500 hover:text-red-700"
-                  onClick={() => {
-                    setSemesterToDelete(semester);
-                    setIsDeleteModalOpen(true);
-                  }}
-                >
-                  <FaTrashAlt />
-                </button>
-              </td>
-            </tr>
-          ))}
+          {filteredSemesters.map((semester) => {
+            const isEditable =
+              semester.semesterName === latestSemester?.semesterName;
+            return (
+              <tr
+                key={semester.id_semester}
+                className="text-center bg-white border-b"
+              >
+                <td className="py-4">{semester.semesterName}</td>
+                <td className="py-4">
+                  {new Date(semester.until).toLocaleDateString()}
+                </td>
+                <td className="py-4">
+                  {new Date(semester.updated_at).toLocaleDateString()}
+                </td>
+                <td className="flex items-center justify-center space-x-4 py-4">
+                  <button
+                    className={`text-blue-500 hover:text-blue-700 ${
+                      !isEditable && "opacity-50 pointer-events-none"
+                    }`}
+                    onClick={() => {
+                      setSemesterToEdit(semester);
+                      setIsEditModalOpen(true);
+                    }}
+                    disabled={!isEditable}
+                  >
+                    <FaEdit />
+                  </button>
+                  <button
+                    className={`text-red-500 hover:text-red-700 ${
+                      !isEditable && "opacity-50 pointer-events-none"
+                    }`}
+                    onClick={() => {
+                      setSemesterToDelete(semester);
+                      setIsDeleteModalOpen(true);
+                    }}
+                    disabled={!isEditable}
+                  >
+                    <FaTrashAlt />
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

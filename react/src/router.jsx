@@ -14,6 +14,7 @@ import QuerysN from "./views/QuerysN";
 import Semesters from "./views/Semesters";
 import RegisterVisit from "./views/RegisterVisit";  
 import EditVisit from "./views/EditVisit"; 
+import Statistics from "./views/Statistics";
 
 const router = createBrowserRouter([
   {
@@ -67,6 +68,10 @@ const router = createBrowserRouter([
       {
         path: "/semesters",
         element: <Semesters />,
+      },
+      {
+        path: "/statistics",
+        element: <Statistics />,
       },
     ],
   },

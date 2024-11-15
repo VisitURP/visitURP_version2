@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import {
   ChevronUpIcon,
@@ -12,18 +12,18 @@ import {
   Bars3Icon,
   XMarkIcon,
   ChatBubbleBottomCenterTextIcon,
+  ChartBarIcon, // Importación del icono para "Estadísticas"
 } from "@heroicons/react/24/outline";
 import { Navigate, NavLink, Outlet } from "react-router-dom";
 import { useStateContext } from "../contexts/ContextProvider";
 import axiosClient from "../axios";
-import { useEffect } from "react";
 import Toast from "./Toast";
 import { CogIcon } from "lucide-react";
 
 // Navigation items with dropdowns for Visitantes and Preguntas
 const navigation = [
   { name: "DASHBOARD", to: "/", icon: HomeIcon },
- // { name: "SURVEYS", to: "/surveys", icon: ClipboardIcon },
+  { name: "ESTADÍSTICAS", to: "/statistics", icon: ChartBarIcon }, // Nueva opción añadida debajo de "DASHBOARD"
   {
     name: "VISITANTES",
     icon: UsersIcon,
@@ -71,7 +71,7 @@ export default function DefaultLayout() {
     });
   };
 
-  //Se obtienen los datos del usuario
+  // Se obtienen los datos del usuario
   useEffect(() => {
     axiosClient.get("/me").then(({ data }) => {
       setCurrentUser(data);
