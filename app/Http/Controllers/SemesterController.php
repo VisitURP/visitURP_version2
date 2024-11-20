@@ -14,15 +14,16 @@ class SemesterController extends Controller
     }
     public function store(Request $request)
     {
-    $semester = new Semester();
-    $semester->semesterName = $request->input('semesterName');
-    $semester->until = $request->input('until');
-    $semester->created_at = now();
-    // Se asume que updated_at y deleted_at son nulos por defecto
-    $semester->save();
+        $semester = new Semester();
+        $semester->semesterName = $request->input('semesterName');
+        $semester->semesterFrom = $request->input('semesterFrom');
+        $semester->semesterTo = $request->input('semesterTo');
+        $semester->created_at = now();
+        // Se asume que updated_at y deleted_at son nulos por defecto
+        $semester->save();
 
-    return response()->json($semester, 201);
-    }
+        return response()->json($semester, 201);
+        }
 
     public function update(Request $request, $id)
     {
@@ -37,12 +38,14 @@ class SemesterController extends Controller
         // Validar los datos
         $request->validate([
             'semesterName' => 'required|string|max:255',
-            'until' => 'required|date',
+            'semesterFrom' => 'required|date',
+            'semesterTo' => 'required|date',
         ]);
 
         // Actualiza los campos
         $semester->semesterName = $request->input('semesterName');
-        $semester->until = $request->input('until');
+        $semester->semesterFrom = $request->input('semesterFrom');
+        $semester->semesterTo = $request->input('semesterTo');
         $semester->updated_at = now(); // Actualiza la fecha de última modificación
         $semester->save();
 

@@ -13,9 +13,15 @@ class Kernel extends ConsoleKernel
      * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
      * @return void
      */
+    protected $commands = [
+        // Registra tus comandos personalizados aquí
+    ];
+    
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+       $schedule->command('sync:visitor-infoXapplicant')->daily();
+
     }
 
     /**
