@@ -12,9 +12,11 @@ import VisitorsV from "./views/VisitorsV";
 import QuerysP from "./views/QuerysP";
 import QuerysN from "./views/QuerysN";
 import Semesters from "./views/Semesters";
-import RegisterVisit from "./views/RegisterVisit";  
-import EditVisit from "./views/EditVisit"; 
+import RegisterVisit from "./views/RegisterVisit";
+import EditVisit from "./views/EditVisit";
 import Statistics from "./views/Statistics";
+import Advertising from "./views/Advertising";
+import Feedbacks from "./views/Feedbacks";
 
 const router = createBrowserRouter([
   {
@@ -50,7 +52,7 @@ const router = createBrowserRouter([
         element: <VisitorsV />,
       },
       {
-        path: "/register-visit",    
+        path: "/register-visit",
         element: <RegisterVisit />,
       },
       {
@@ -72,6 +74,14 @@ const router = createBrowserRouter([
       {
         path: "/statistics",
         element: <Statistics />,
+      },
+      {
+        path: "/advertising",
+        element: <Advertising />,
+      },
+      {
+        path: "/feedbacks",
+        element: <Feedbacks />,
       },
     ],
   },

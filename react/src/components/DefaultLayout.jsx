@@ -1,6 +1,8 @@
 import { Fragment, useState, useEffect } from "react";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import {
+  MegaphoneIcon,
+  BellIcon,
   ChevronUpIcon,
   ChevronDownIcon,
   UserIcon,
@@ -12,7 +14,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   ChatBubbleBottomCenterTextIcon,
-  ChartBarIcon, // Importación del icono para "Estadísticas"
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { Navigate, NavLink, Outlet } from "react-router-dom";
 import { useStateContext } from "../contexts/ContextProvider";
@@ -46,7 +48,7 @@ const navigation = [
     icon: ChatBubbleBottomCenterTextIcon,
   },
   { name: "SEMESTRES", to: "/semesters", icon: AcademicCapIcon },
-  { name: "PERFIL", to: "/profile", icon: CogIcon },
+  { name: "PUBLICIDAD", to: "/advertising", icon: MegaphoneIcon },
 ];
 
 function classNames(...classes) {
@@ -58,6 +60,8 @@ export default function DefaultLayout() {
     useStateContext();
   const [openDropdown, setOpenDropdown] = useState(null); // To manage dropdown state
   const [sidebarOpen, setSidebarOpen] = useState(true); // State to toggle sidebar
+  const [notifications, setNotifications] = useState([]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   if (!userToken) {
     return <Navigate to="login" />;
@@ -76,12 +80,20 @@ export default function DefaultLayout() {
     axiosClient.get("/me").then(({ data }) => {
       setCurrentUser(data);
     });
+    // Simulación de carga de notificaciones
+    axiosClient.get("/notifications").then(({ data }) => {
+      setNotifications(data || []);
+    });
   }, []);
 
   // Function to handle dropdown toggle
   const toggleDropdown = (name) => {
     setOpenDropdown(openDropdown === name ? null : name);
   };
+
+   const toggleNotifications = () => {
+     setIsNotificationsOpen(!isNotificationsOpen);
+   };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -213,7 +225,45 @@ export default function DefaultLayout() {
           </button>
           <div className="text-lg font-bold">Universidad Ricardo Palma</div>
           <div className="flex items-center space-x-4">
-            <div className="text-sm">{currentUser?.name || "Alexa Admin"}</div>
+            <div className="text-sm">
+              {currentUser?.name || "Personal Administrativo"}
+            </div>
+            <div className="relative">
+              <button
+                onClick={toggleNotifications}
+                className="relative flex items-center justify-center"
+              >
+                <BellIcon className="w-6 h-6 text-white z-80" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+              {isNotificationsOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-10 overflow-hidden">
+                  <div className="p-4 border-b border-gray-200 font-bold">
+                    Notificaciones
+                  </div>
+                  <ul className="divide-y divide-gray-200">
+                    {notifications.length > 0 ? (
+                      notifications.map((notification, index) => (
+                        <li
+                          key={index}
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          {notification.message}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="px-4 py-2 text-sm text-gray-500">
+                        No hay notificaciones.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
             <Menu as="div" className="relative">
               <Menu.Button className="flex items-center rounded-full bg-green-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                 <span className="sr-only">Open user menu</span>

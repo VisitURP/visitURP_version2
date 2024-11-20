@@ -6,7 +6,7 @@ export default function Semesters() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [semesterYear, setSemesterYear] = useState(new Date().getFullYear());
   const [semesterSuffix, setSemesterSuffix] = useState(0);
-  const [until, setUntil] = useState("");
+  const [semesterTo, setSemesterTo] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [semesterToEdit, setSemesterToEdit] = useState(null);
@@ -16,7 +16,6 @@ export default function Semesters() {
     new Date().getFullYear(),
   ]);
   const [errorMessage, setErrorMessage] = useState("");
-
   const [latestSemester, setLatestSemester] = useState(null);
 
   const fetchSemesters = () => {
@@ -80,8 +79,9 @@ export default function Semesters() {
 
   const handleAddSemester = () => {
     const semesterName = `${semesterYear}-${semesterSuffix}`;
+    const semesterFrom = new Date().toISOString();
 
-    if (!until) {
+    if (!semesterTo) {
       setErrorMessage("Por favor ingrese la Fecha de Terminación.");
       return;
     }
@@ -93,8 +93,11 @@ export default function Semesters() {
 
     const newSemester = {
       semesterName,
-      until,
-      created_at: new Date().toISOString(),
+      semesterFrom,
+      semesterTo,
+      created_at: semesterFrom,
+      updated_at: semesterFrom,
+      deleted_at: null,
     };
 
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters`, {
@@ -110,7 +113,7 @@ export default function Semesters() {
         fetchSemesters();
         setIsModalOpen(false);
         setSemesterSuffix(1);
-        setUntil("");
+        setSemesterTo("");
         setErrorMessage("");
         updateAvailableYears([createdSemester]);
       })
@@ -123,6 +126,8 @@ export default function Semesters() {
   };
 
   const handleUpdateSemester = () => {
+    const updated_at = new Date().toISOString();
+
     fetch(
       `${import.meta.env.VITE_API_BASE_URL}/api/semesters/${
         semesterToEdit.id_semester
@@ -134,7 +139,8 @@ export default function Semesters() {
         },
         body: JSON.stringify({
           semesterName: semesterToEdit.semesterName,
-          until: semesterToEdit.until,
+          semesterTo: semesterToEdit.semesterTo,
+          updated_at,
         }),
       }
     )
@@ -152,12 +158,18 @@ export default function Semesters() {
   };
 
   const handleConfirmDelete = () => {
+    const deleted_at = new Date().toISOString();
+
     fetch(
       `${import.meta.env.VITE_API_BASE_URL}/api/semesters/${
         semesterToDelete.id_semester
       }`,
       {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ deleted_at }),
       }
     )
       .then((response) => {
@@ -251,8 +263,8 @@ export default function Semesters() {
             </label>
             <input
               type="date"
-              value={until}
-              onChange={(e) => setUntil(e.target.value)}
+              value={semesterTo}
+              onChange={(e) => setSemesterTo(e.target.value)}
               className="block w-full px-4 py-2 border rounded-lg mb-6"
               min={new Date().toISOString().split("T")[0]}
             />
@@ -327,22 +339,25 @@ export default function Semesters() {
       {/* Delete Modal */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
-          <div className="bg-white p-8 rounded-lg w-full max-w-md shadow-lg">
-            <h2 className="text-2xl font-bold mb-6">Confirmar Eliminación</h2>
-            <p className="text-gray-700 mb-8">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
+            <h2 className="text-2xl font-bold text-center mb-4">
+              Confirmar Eliminación
+            </h2>
+            <p className="text-gray-700 text-center mb-6">
               ¿Está seguro de que desea eliminar el semestre{" "}
-              <strong>{semesterToDelete?.semesterName}</strong>?
+              <strong>{semesterToDelete?.semesterName}</strong>? Esta acción no
+              se puede deshacer.
             </p>
-            <div className="flex justify-between">
+            <div className="flex justify-center gap-4">
               <button
                 onClick={handleConfirmDelete}
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg"
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-lg"
               >
                 Eliminar
               </button>
               <button
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg"
+                className="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg"
               >
                 Cancelar
               </button>
@@ -372,7 +387,7 @@ export default function Semesters() {
               >
                 <td className="py-4">{semester.semesterName}</td>
                 <td className="py-4">
-                  {new Date(semester.until).toLocaleDateString()}
+                  {new Date(semester.semesterTo).toLocaleDateString()}
                 </td>
                 <td className="py-4">
                   {new Date(semester.updated_at).toLocaleDateString()}
