@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { FaEdit, FaTrashAlt, FaInfoCircle } from "react-icons/fa";
+import axios from "axios";
+import { FaEdit, FaTrashAlt, FaInfoCircle, FaPlus } from "react-icons/fa";
 
 export default function Semesters() {
   const [semesters, setSemesters] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [semesterYear, setSemesterYear] = useState(new Date().getFullYear());
-  const [semesterSuffix, setSemesterSuffix] = useState(0);
+  const [semesterSuffix, setSemesterSuffix] = useState(1);
   const [semesterTo, setSemesterTo] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -18,25 +19,25 @@ export default function Semesters() {
   const [errorMessage, setErrorMessage] = useState("");
   const [latestSemester, setLatestSemester] = useState(null);
 
-  const fetchSemesters = () => {
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters`)
-      .then((response) => response.json())
-      .then((data) => {
-        setSemesters(data);
-        updateAvailableYears(data);
-        autoSetNextSemester(data);
+  const API_BASE_URL = "http://localhost/visitURP_Backend/public/index.php/api";
 
-        // Determinar el último semestre registrado
-        const sortedSemesters = [...data].sort((a, b) => {
-          const [yearA, suffixA] = a.semesterName.split("-").map(Number);
-          const [yearB, suffixB] = b.semesterName.split("-").map(Number);
-          return yearB - yearA || suffixB - suffixA;
-        });
-        setLatestSemester(sortedSemesters[0]);
-      })
-      .catch((error) =>
-        console.error("Error al obtener los semestres:", error)
-      );
+  const fetchSemesters = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/list-semester`);
+      const data = response.data;
+      setSemesters(data);
+      updateAvailableYears(data);
+      autoSetNextSemester(data);
+
+      const sortedSemesters = [...data].sort((a, b) => {
+        const [yearA, suffixA] = a.semesterName.split("-").map(Number);
+        const [yearB, suffixB] = b.semesterName.split("-").map(Number);
+        return yearB - yearA || suffixB - suffixA;
+      });
+      setLatestSemester(sortedSemesters[0]);
+    } catch (error) {
+      console.error("Error al obtener los semestres:", error);
+    }
   };
 
   const updateAvailableYears = (semestersData) => {
@@ -77,7 +78,7 @@ export default function Semesters() {
     fetchSemesters();
   }, []);
 
-  const handleAddSemester = () => {
+  const handleAddSemester = async () => {
     const semesterName = `${semesterYear}-${semesterSuffix}`;
     const semesterFrom = new Date().toISOString();
 
@@ -96,28 +97,18 @@ export default function Semesters() {
       semesterFrom,
       semesterTo,
       created_at: semesterFrom,
-      updated_at: semesterFrom,
-      deleted_at: null,
     };
 
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/semesters`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newSemester),
-    })
-      .then((response) => {
-        if (response.ok) return response.json();
-        throw new Error("Error al registrar el nuevo semestre");
-      })
-      .then((createdSemester) => {
-        fetchSemesters();
-        setIsModalOpen(false);
-        setSemesterSuffix(1);
-        setSemesterTo("");
-        setErrorMessage("");
-        updateAvailableYears([createdSemester]);
-      })
-      .catch((error) => console.error("Error:", error));
+    try {
+      await axios.post(`${API_BASE_URL}/register-semester`, newSemester);
+      fetchSemesters();
+      setIsModalOpen(false);
+      setSemesterSuffix(1);
+      setSemesterTo("");
+      setErrorMessage("");
+    } catch (error) {
+      console.error("Error al registrar el semestre:", error);
+    }
   };
 
   const handleCloseModal = () => {
@@ -125,62 +116,31 @@ export default function Semesters() {
     setErrorMessage("");
   };
 
-  const handleUpdateSemester = () => {
-    const updated_at = new Date().toISOString();
-
-    fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/semesters/${
-        semesterToEdit.id_semester
-      }`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          semesterName: semesterToEdit.semesterName,
-          semesterTo: semesterToEdit.semesterTo,
-          updated_at,
-        }),
-      }
-    )
-      .then((response) => {
-        if (response.ok) return response.json();
-        throw new Error("Error al actualizar el semestre");
-      })
-      .then(() => {
-        fetchSemesters();
-        setIsEditModalOpen(false);
-      })
-      .catch((error) =>
-        console.error("Error al actualizar el semestre:", error)
-      );
+  const handleUpdateSemester = async () => {
+    try {
+      const updated_at = new Date().toISOString();
+      const { semesterName, semesterTo } = semesterToEdit;
+      await axios.put(`${API_BASE_URL}/update-semester/${semesterName}`, {
+        semesterName,
+        semesterTo,
+        updated_at,
+      });
+      fetchSemesters();
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error("Error al actualizar el semestre:", error);
+    }
   };
 
-  const handleConfirmDelete = () => {
-    const deleted_at = new Date().toISOString();
-
-    fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/semesters/${
-        semesterToDelete.id_semester
-      }`,
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ deleted_at }),
-      }
-    )
-      .then((response) => {
-        if (response.ok) {
-          fetchSemesters();
-          setIsDeleteModalOpen(false);
-        } else {
-          throw new Error("Error al eliminar el semestre");
-        }
-      })
-      .catch((error) => console.error("Error:", error));
+  const handleConfirmDelete = async () => {
+    try {
+      const { semesterName } = semesterToDelete;
+      await axios.delete(`${API_BASE_URL}/delete-semester/${semesterName}`);
+      fetchSemesters();
+      setIsDeleteModalOpen(false);
+    } catch (error) {
+      console.error("Error al eliminar el semestre:", error);
+    }
   };
 
   const filteredSemesters = selectedSemester
@@ -204,7 +164,7 @@ export default function Semesters() {
       </p>
       <div className="flex items-center space-x-4 mb-8">
         <select
-          className="px-12 py-3 border border-gray-300 rounded-lg text-gray-700 focus:ring-0"
+          className="px-10 py-3 border border-gray-300 rounded-lg text-gray-700 focus:ring-0"
           onChange={(e) => setSelectedSemester(e.target.value)}
         >
           <option value="">-- Todos los años --</option>
@@ -215,10 +175,11 @@ export default function Semesters() {
           ))}
         </select>
         <button
-          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-3 rounded-lg"
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-3 rounded-lg"
           onClick={() => setIsModalOpen(true)}
         >
-          Registrar nuevo semestre
+          <FaPlus className="inline mr-2" />
+          Registrar Semestre
         </button>
       </div>
 

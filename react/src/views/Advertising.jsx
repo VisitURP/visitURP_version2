@@ -7,13 +7,24 @@ export default function Publicities() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [selectedPublicity, setSelectedPublicity] = useState(null);
   const [formData, setFormData] = useState({ title: "", url: "" });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Obtener los datos de publicidades al montar el componente
   useEffect(() => {
     fetchPublicities();
   }, []);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const fetchPublicities = async () => {
     try {
@@ -26,21 +37,52 @@ export default function Publicities() {
     }
   };
 
+  const searchPublicity = async () => {
+    if (!searchQuery.trim()) {
+      fetchPublicities();
+      return;
+    }
+    try {
+      const response = await axios.get(
+        `http://localhost/visitURP_Backend/public/index.php/api/find-publicity/${searchQuery}`
+      );
+      setPublicities([response.data]);
+    } catch (error) {
+      console.error("Error al buscar la publicidad:", error);
+      setPublicities([]);
+    }
+  };
+
+  const validateFields = () => {
+    if (!formData.title) {
+      setErrorMessage("Por favor, ingrese el título de la publicidad.");
+      return false;
+    }
+    if (!formData.url) {
+      setErrorMessage("Por favor, ingrese el URL de la publicidad.");
+      return false;
+    }
+    return true;
+  };
+
   const handleAddPublicity = async () => {
+    if (!validateFields()) return;
     try {
       await axios.post(
-        "https://localhost/visitURP_Backend/public/index.php/api/register-publicity",
+        "http://localhost/visitURP_Backend/public/index.php/api/register-publicity",
         formData
       );
       fetchPublicities();
       setIsModalOpen(false);
       setFormData({ title: "", url: "" });
+      setSuccessMessage("Publicidad registrada con éxito.");
     } catch (error) {
       console.error("Error al registrar la publicidad:", error);
     }
   };
 
   const handleEditPublicity = async () => {
+    if (!validateFields()) return;
     try {
       await axios.put(
         `http://localhost/visitURP_Backend/public/index.php/api/update-publicity/${selectedPublicity.id}`,
@@ -49,6 +91,7 @@ export default function Publicities() {
       fetchPublicities();
       setIsEditModalOpen(false);
       setFormData({ title: "", url: "" });
+      setSuccessMessage("Publicidad editada con éxito.");
     } catch (error) {
       console.error("Error al actualizar la publicidad:", error);
     }
@@ -61,6 +104,7 @@ export default function Publicities() {
       );
       fetchPublicities();
       setIsDeleteModalOpen(false);
+      setSuccessMessage("Publicidad eliminada con éxito.");
     } catch (error) {
       console.error("Error al eliminar la publicidad:", error);
     }
@@ -72,16 +116,34 @@ export default function Publicities() {
         Gestionar Publicidad
       </h1>
       <p className="text-lg text-gray-500 mb-12 text-center">
-        Puedes agregar nueva publicidad, eliminar o modificar la existente.
+        Puedes agregar nueva publicidad, modificar o eliminar la existente.
       </p>
 
-      <button
-        className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-3 rounded-lg mb-6"
-        onClick={() => setIsModalOpen(true)}
-      >
-        <FaPlus className="inline mr-2" />
-        Registrar Publicidad
-      </button>
+      <div className="mb-6 flex items-center gap-4">
+        <input
+          type="text"
+          placeholder="Buscar por ID o título"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+        />
+        <button
+          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg"
+          onClick={searchPublicity}
+        >
+          Buscar
+        </button>
+        <button
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-lg"
+          onClick={() => {
+            setErrorMessage("");
+            setIsModalOpen(true);
+          }}
+        >
+          <FaPlus className="inline mr-2" />
+          Registrar Publicidad
+        </button>
+      </div>
 
       <table className="min-w-full border rounded-lg overflow-hidden">
         <thead>
@@ -98,7 +160,10 @@ export default function Publicities() {
               <tr key={publicity.id} className="text-center bg-white border-b">
                 <td className="py-4">{publicity.id}</td>
                 <td className="py-4">{publicity.title}</td>
-                <td className="py-4">
+                <td
+                  className="py-4 break-words"
+                  style={{ wordBreak: "break-word" }}
+                >
                   <a
                     href={publicity.url}
                     target="_blank"
@@ -112,6 +177,7 @@ export default function Publicities() {
                   <button
                     className="text-blue-500 hover:text-blue-700"
                     onClick={() => {
+                      setErrorMessage("");
                       setSelectedPublicity(publicity);
                       setFormData({
                         title: publicity.title,
@@ -144,18 +210,33 @@ export default function Publicities() {
         </tbody>
       </table>
 
-      {/* Registrar Modal */}
+      {successMessage && (
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+          {successMessage}
+          <button
+            onClick={() => setSuccessMessage("")}
+            className="ml-4 text-lg font-bold"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Modales para agregar, editar y eliminar */}
       {isModalOpen && (
         <Modal
-          title="Registrar Publicidad"
+          title="Registrar Nueva Publicidad"
           formData={formData}
           setFormData={setFormData}
           onSubmit={handleAddPublicity}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setFormData({}); // Restablecer los campos a blanco
+            setIsModalOpen(false);
+          }}
+          errorMessage={errorMessage}
         />
       )}
 
-      {/* Editar Modal */}
       {isEditModalOpen && (
         <Modal
           title="Editar Publicidad"
@@ -163,10 +244,10 @@ export default function Publicities() {
           setFormData={setFormData}
           onSubmit={handleEditPublicity}
           onClose={() => setIsEditModalOpen(false)}
+          errorMessage={errorMessage}
         />
       )}
 
-      {/* Eliminar Modal */}
       {isDeleteModalOpen && (
         <DeleteModal
           onConfirm={handleDeletePublicity}
@@ -178,11 +259,19 @@ export default function Publicities() {
   );
 }
 
-function Modal({ title, formData, setFormData, onSubmit, onClose }) {
+function Modal({
+  title,
+  formData,
+  setFormData,
+  onSubmit,
+  onClose,
+  errorMessage,
+}) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
       <div className="bg-white p-8 rounded-lg w-full max-w-md shadow-lg">
         <h2 className="text-2xl font-bold mb-4">{title}</h2>
+        {errorMessage && <p className="text-red-500 mb-4">{errorMessage}</p>}
         <label className="block text-gray-700 font-semibold mb-2">Título</label>
         <input
           type="text"
@@ -197,16 +286,16 @@ function Modal({ title, formData, setFormData, onSubmit, onClose }) {
           onChange={(e) => setFormData({ ...formData, url: e.target.value })}
           className="block w-full px-4 py-2 border rounded-lg mb-6"
         />
-        <div className="flex justify-between">
+        <div className="flex justify-between gap-4">
           <button
             onClick={onSubmit}
-            className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg"
+            className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg flex-1"
           >
             Guardar
           </button>
           <button
             onClick={onClose}
-            className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg"
+            className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg flex-1"
           >
             Cancelar
           </button>
@@ -224,16 +313,16 @@ function DeleteModal({ onConfirm, onClose, message }) {
           Confirmar Eliminación
         </h2>
         <p className="text-gray-700 text-center mb-6">{message}</p>
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-between gap-4">
           <button
             onClick={onConfirm}
-            className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-lg"
+            className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-lg flex-1"
           >
             Eliminar
           </button>
           <button
             onClick={onClose}
-            className="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg"
+            className="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg flex-1"
           >
             Cancelar
           </button>
