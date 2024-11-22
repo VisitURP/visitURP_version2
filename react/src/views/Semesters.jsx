@@ -21,13 +21,28 @@ export default function Semesters() {
 
   const API_BASE_URL = "http://localhost/visitURP_Backend/public/index.php/api";
 
+  const formatDate = (date) => {
+    const d = new Date(date);
+    const yyyy = d.getFullYear();
+    const MM = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const HH = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
+    return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
+  };
+
   const fetchSemesters = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/list-semester`);
       const data = response.data;
       setSemesters(data);
       updateAvailableYears(data);
-      autoSetNextSemester(data);
+
+      // Configurar automáticamente el próximo semestre si la tabla está vacía
+      if (data.length === 0) {
+        autoSetNextSemester(data);
+      }
 
       const sortedSemesters = [...data].sort((a, b) => {
         const [yearA, suffixA] = a.semesterName.split("-").map(Number);
@@ -52,25 +67,24 @@ export default function Semesters() {
   };
 
   const autoSetNextSemester = (semestersData) => {
-    const latestSemester = semestersData.reduce((latest, current) => {
-      const [currentYear, currentSuffix] = current.semesterName
-        .split("-")
-        .map(Number);
-      if (
-        currentYear > (latest.year || 0) ||
-        (currentYear === latest.year && currentSuffix > latest.suffix)
-      ) {
-        return { year: currentYear, suffix: currentSuffix };
-      }
-      return latest;
-    }, {});
+    if (semestersData.length === 0) {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth() + 1; // Los meses van de 0 a 11
 
-    if (latestSemester.suffix === 2) {
-      setSemesterYear(latestSemester.year + 1);
-      setSemesterSuffix(1);
-    } else {
-      setSemesterYear(latestSemester.year);
-      setSemesterSuffix(2);
+      if (currentMonth > 8) {
+        // Si estamos después de agosto, configurar el próximo año y semestre 1
+        setSemesterYear(currentYear + 1);
+        setSemesterSuffix(1);
+      } else if (currentMonth > 3) {
+        // Si estamos después de marzo, configurar el año actual y semestre 2
+        setSemesterYear(currentYear);
+        setSemesterSuffix(2);
+      } else {
+        // Antes de marzo, configurar el año actual y semestre 1
+        setSemesterYear(currentYear);
+        setSemesterSuffix(1);
+      }
     }
   };
 
@@ -80,7 +94,8 @@ export default function Semesters() {
 
   const handleAddSemester = async () => {
     const semesterName = `${semesterYear}-${semesterSuffix}`;
-    const semesterFrom = new Date().toISOString();
+    const semesterFrom = formatDate(new Date()); // Formatea la fecha actual
+    const semesterToFormatted = formatDate(semesterTo);
 
     if (!semesterTo) {
       setErrorMessage("Por favor ingrese la Fecha de Terminación.");
@@ -95,7 +110,7 @@ export default function Semesters() {
     const newSemester = {
       semesterName,
       semesterFrom,
-      semesterTo,
+      semesterTo: semesterToFormatted,
       created_at: semesterFrom,
     };
 
@@ -107,7 +122,11 @@ export default function Semesters() {
       setSemesterTo("");
       setErrorMessage("");
     } catch (error) {
-      console.error("Error al registrar el semestre:", error);
+      if (error.response) {
+        console.error("Error del servidor:", error.response.data);
+      } else {
+        console.error("Error de red:", error.message);
+      }
     }
   };
 
@@ -118,11 +137,13 @@ export default function Semesters() {
 
   const handleUpdateSemester = async () => {
     try {
-      const updated_at = new Date().toISOString();
+      const updated_at = formatDate(new Date());
       const { semesterName, semesterTo } = semesterToEdit;
+      const semesterToFormatted = formatDate(semesterTo);
+
       await axios.put(`${API_BASE_URL}/update-semester/${semesterName}`, {
         semesterName,
-        semesterTo,
+        semesterTo: semesterToFormatted,
         updated_at,
       });
       fetchSemesters();
