@@ -36,20 +36,15 @@ export default function Semesters() {
     try {
       const response = await axios.get(`${API_BASE_URL}/list-semester`);
       const data = response.data;
-      setSemesters(data);
-      updateAvailableYears(data);
-
-      // Configurar automáticamente el próximo semestre si la tabla está vacía
-      if (data.length === 0) {
-        autoSetNextSemester(data);
-      }
 
       const sortedSemesters = [...data].sort((a, b) => {
         const [yearA, suffixA] = a.semesterName.split("-").map(Number);
         const [yearB, suffixB] = b.semesterName.split("-").map(Number);
         return yearB - yearA || suffixB - suffixA;
       });
-      setLatestSemester(sortedSemesters[0]);
+
+      setSemesters(sortedSemesters);
+      autoSetNextSemester(sortedSemesters);
     } catch (error) {
       console.error("Error al obtener los semestres:", error);
     }
@@ -67,21 +62,36 @@ export default function Semesters() {
   };
 
   const autoSetNextSemester = (semestersData) => {
-    if (semestersData.length === 0) {
-      const today = new Date();
+    const today = new Date();
+
+    if (semestersData.length > 0) {
+      const latest = semestersData[0];
+      const [year, suffix] = latest.semesterName.split("-").map(Number);
+      const semesterEnd = new Date(latest.semesterTo);
+
+      if (today > semesterEnd) {
+        // Avanzar al próximo ciclo
+        const nextSuffix = suffix === 1 ? 2 : 1;
+        const nextYear = suffix === 2 ? year + 1 : year;
+        setSemesterYear(nextYear);
+        setSemesterSuffix(nextSuffix);
+      } else {
+        // Configurar el semestre actual como base
+        setSemesterYear(year);
+        setSemesterSuffix(suffix === 1 ? 2 : 1);
+      }
+    } else {
+      // Configuración inicial si no hay semestres
       const currentYear = today.getFullYear();
-      const currentMonth = today.getMonth() + 1; // Los meses van de 0 a 11
+      const currentMonth = today.getMonth() + 1;
 
       if (currentMonth > 8) {
-        // Si estamos después de agosto, configurar el próximo año y semestre 1
         setSemesterYear(currentYear + 1);
         setSemesterSuffix(1);
       } else if (currentMonth > 3) {
-        // Si estamos después de marzo, configurar el año actual y semestre 2
         setSemesterYear(currentYear);
         setSemesterSuffix(2);
       } else {
-        // Antes de marzo, configurar el año actual y semestre 1
         setSemesterYear(currentYear);
         setSemesterSuffix(1);
       }
@@ -94,7 +104,7 @@ export default function Semesters() {
 
   const handleAddSemester = async () => {
     const semesterName = `${semesterYear}-${semesterSuffix}`;
-    const semesterFrom = formatDate(new Date()); // Formatea la fecha actual
+    const semesterFrom = formatDate(new Date());
     const semesterToFormatted = formatDate(semesterTo);
 
     if (!semesterTo) {
@@ -117,22 +127,18 @@ export default function Semesters() {
     try {
       await axios.post(`${API_BASE_URL}/register-semester`, newSemester);
       fetchSemesters();
+      setSemesterTo(""); // Reiniciar la fecha de terminación
       setIsModalOpen(false);
-      setSemesterSuffix(1);
-      setSemesterTo("");
       setErrorMessage("");
     } catch (error) {
-      if (error.response) {
-        console.error("Error del servidor:", error.response.data);
-      } else {
-        console.error("Error de red:", error.message);
-      }
+      console.error("Error al registrar el semestre:", error);
     }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setErrorMessage("");
+    setSemesterTo(""); // Reiniciar la fecha de terminación al cerrar
   };
 
   const handleUpdateSemester = async () => {
