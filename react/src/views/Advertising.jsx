@@ -4,6 +4,7 @@ import axios from "axios";
 
 export default function Publicities() {
   const [publicities, setPublicities] = useState([]);
+  const [filteredPublicities, setFilteredPublicities] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -37,20 +38,14 @@ export default function Publicities() {
     }
   };
 
-  const searchPublicity = async () => {
-    if (!searchQuery.trim()) {
-      fetchPublicities();
-      return;
-    }
-    try {
-      const response = await axios.get(
-        `http://localhost/visitURP_Backend/public/index.php/api/find-publicity/${searchQuery}`
-      );
-      setPublicities([response.data]);
-    } catch (error) {
-      console.error("Error al buscar la publicidad:", error);
-      setPublicities([]);
-    }
+  const searchPublicity = () => {
+    const query = searchQuery.toLowerCase();
+    const results = publicities.filter(
+      (publicity) =>
+        publicity.id.toString().includes(query) ||
+        publicity.title.toLowerCase().includes(query)
+    );
+    setFilteredPublicities(results);
   };
 
   const validateFields = () => {
@@ -58,10 +53,13 @@ export default function Publicities() {
       setErrorMessage("Por favor, ingrese el título de la publicidad.");
       return false;
     }
-    if (!formData.url) {
-      setErrorMessage("Por favor, ingrese el URL de la publicidad.");
+    const urlRegex =
+      /(?:https?):\/\/(\w+:?\w*)?(\S+)(:\d+)?(\/|\/([\w#!:.?+=&%!\-\/]))?/;
+    if (!urlRegex.test(formData.url)) {
+      setErrorMessage("Por favor, ingrese un URL válido (http:// o https://).");
       return false;
     }
+    setErrorMessage("");
     return true;
   };
 
@@ -155,8 +153,8 @@ export default function Publicities() {
           </tr>
         </thead>
         <tbody>
-          {publicities.length > 0 ? (
-            publicities.map((publicity) => (
+          {filteredPublicities.length > 0 ? (
+            filteredPublicities.map((publicity) => (
               <tr key={publicity.id} className="text-center bg-white border-b">
                 <td className="py-4">{publicity.id}</td>
                 <td className="py-4">{publicity.title}</td>
@@ -200,6 +198,12 @@ export default function Publicities() {
                 </td>
               </tr>
             ))
+          ) : publicities.length > 0 ? (
+            <tr>
+              <td colSpan="4" className="py-4 text-center text-gray-500">
+                No hay resultados para tu búsqueda.
+              </td>
+            </tr>
           ) : (
             <tr>
               <td colSpan="4" className="py-4 text-center text-gray-500">
