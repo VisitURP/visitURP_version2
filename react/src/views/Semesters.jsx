@@ -37,13 +37,21 @@ export default function Semesters() {
       const response = await axios.get(`${API_BASE_URL}/list-semester`);
       const data = response.data;
 
-      const sortedSemesters = [...data].sort((a, b) => {
-        const [yearA, suffixA] = a.semesterName.split("-").map(Number);
-        const [yearB, suffixB] = b.semesterName.split("-").map(Number);
-        return yearB - yearA || suffixB - suffixA;
-      });
+      // Ordenar por fecha de creación (de más antiguo a más reciente)
+      const sortedSemesters = [...data].sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+      );
 
       setSemesters(sortedSemesters);
+
+      // Actualizar los años disponibles en el desplegable
+      updateAvailableYears(sortedSemesters);
+
+      // Establecer el último semestre
+      if (sortedSemesters.length > 0) {
+        setLatestSemester(sortedSemesters[sortedSemesters.length - 1]);
+      }
+
       autoSetNextSemester(sortedSemesters);
     } catch (error) {
       console.error("Error al obtener los semestres:", error);
@@ -51,13 +59,12 @@ export default function Semesters() {
   };
 
   const updateAvailableYears = (semestersData) => {
-    const years = new Set(availableYears);
-    semestersData.forEach((semester) => {
-      const year = parseInt(semester.semesterName.split("-")[0]);
-      if (!isNaN(year)) {
-        years.add(year);
-      }
-    });
+    // Extraer los años de los nombres de los semestres
+    const years = new Set(
+      semestersData.map((semester) =>
+        parseInt(semester.semesterName.split("-")[0])
+      )
+    );
     setAvailableYears(Array.from(years).sort());
   };
 
@@ -365,9 +372,9 @@ export default function Semesters() {
           </tr>
         </thead>
         <tbody>
-          {filteredSemesters.map((semester) => {
-            const isEditable =
-              semester.semesterName === latestSemester?.semesterName;
+          {filteredSemesters.map((semester, index) => {
+            // Determinar si es el último elemento
+            const isLast = index === filteredSemesters.length - 1;
             return (
               <tr
                 key={semester.id_semester}
@@ -383,25 +390,25 @@ export default function Semesters() {
                 <td className="flex items-center justify-center space-x-4 py-4">
                   <button
                     className={`text-blue-500 hover:text-blue-700 ${
-                      !isEditable && "opacity-50 pointer-events-none"
+                      !isLast && "opacity-50 pointer-events-none"
                     }`}
                     onClick={() => {
                       setSemesterToEdit(semester);
                       setIsEditModalOpen(true);
                     }}
-                    disabled={!isEditable}
+                    disabled={!isLast}
                   >
                     <FaEdit />
                   </button>
                   <button
                     className={`text-red-500 hover:text-red-700 ${
-                      !isEditable && "opacity-50 pointer-events-none"
+                      !isLast && "opacity-50 pointer-events-none"
                     }`}
                     onClick={() => {
                       setSemesterToDelete(semester);
                       setIsDeleteModalOpen(true);
                     }}
-                    disabled={!isEditable}
+                    disabled={!isLast}
                   >
                     <FaTrashAlt />
                   </button>

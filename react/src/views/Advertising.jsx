@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaEdit, FaTrashAlt, FaPlus } from "react-icons/fa";
+import { FaEdit, FaTrashAlt, FaPlus, FaSearch } from "react-icons/fa";
 import axios from "axios";
 
 export default function Publicities() {
@@ -17,6 +17,33 @@ export default function Publicities() {
   useEffect(() => {
     fetchPublicities();
   }, []);
+
+  useEffect(() => {
+    const normalizeText = (text) => {
+      return text
+        .toString()
+        .normalize("NFD") // Descompone caracteres con tildes
+        .replace(/[\u0300-\u036f]/g, "") // Elimina los diacríticos
+        .toLowerCase(); // Convierte a minúsculas
+    };
+
+    if (searchQuery.trim()) {
+      setFilteredPublicities(
+        publicities.filter((publicity) => {
+          const normalizedQuery = normalizeText(searchQuery);
+          const matchesTitle = normalizeText(publicity.title).includes(
+            normalizedQuery
+          );
+          const matchesId = normalizeText(publicity.id).includes(
+            normalizedQuery
+          );
+          return matchesTitle || matchesId;
+        })
+      );
+    } else {
+      setFilteredPublicities([]);
+    }
+  }, [searchQuery, publicities]);
 
   useEffect(() => {
     if (successMessage) {
@@ -39,7 +66,7 @@ export default function Publicities() {
   };
 
   const searchPublicity = () => {
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.trim().toLowerCase(); // Eliminamos espacios innecesarios
     const results = publicities.filter(
       (publicity) =>
         publicity.id.toString().includes(query) ||
@@ -79,21 +106,31 @@ export default function Publicities() {
     }
   };
 
-  const handleEditPublicity = async () => {
-    if (!validateFields()) return;
-    try {
-      await axios.put(
-        `http://localhost/visitURP_Backend/public/index.php/api/update-publicity/${selectedPublicity.id}`,
-        formData
-      );
-      fetchPublicities();
-      setIsEditModalOpen(false);
-      setFormData({ title: "", url: "" });
-      setSuccessMessage("Publicidad editada con éxito.");
-    } catch (error) {
-      console.error("Error al actualizar la publicidad:", error);
-    }
-  };
+   const handleEditPublicity = async () => {
+     if (!validateFields()) return;
+
+     // Validar si no se realizaron cambios
+     if (
+       selectedPublicity.title === formData.title &&
+       selectedPublicity.url === formData.url
+     ) {
+       setErrorMessage("No se realizaron modificaciones.");
+       return;
+     }
+
+     try {
+       await axios.put(
+         `http://localhost/visitURP_Backend/public/index.php/api/update-publicity/${selectedPublicity.id}`,
+         formData
+       );
+       fetchPublicities();
+       setIsEditModalOpen(false);
+       setFormData({ title: "", url: "" });
+       setSuccessMessage("Publicidad editada con éxito.");
+     } catch (error) {
+       console.error("Error al actualizar la publicidad:", error);
+     }
+   };
 
   const handleDeletePublicity = async () => {
     try {
@@ -118,27 +155,24 @@ export default function Publicities() {
       </p>
 
       <div className="mb-6 flex items-center gap-4">
-        <input
-          type="text"
-          placeholder="Buscar por ID o título"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
-        />
+        <div className="flex-1 relative">
+          <FaSearch className="absolute top-3 left-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por ID o título"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 py-2 border border-gray-300 rounded-lg"
+          />
+        </div>
         <button
-          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg"
-          onClick={searchPublicity}
-        >
-          Buscar
-        </button>
-        <button
-          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-lg"
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-lg flex items-center"
           onClick={() => {
             setErrorMessage("");
             setIsModalOpen(true);
           }}
         >
-          <FaPlus className="inline mr-2" />
+          <FaPlus className="mr-2" />
           Registrar Publicidad
         </button>
       </div>
@@ -153,8 +187,64 @@ export default function Publicities() {
           </tr>
         </thead>
         <tbody>
-          {filteredPublicities.length > 0 ? (
-            filteredPublicities.map((publicity) => (
+          {searchQuery.trim() ? (
+            filteredPublicities.length > 0 ? (
+              filteredPublicities.map((publicity) => (
+                <tr
+                  key={publicity.id}
+                  className="text-center bg-white border-b"
+                >
+                  <td className="py-4">{publicity.id}</td>
+                  <td className="py-4">{publicity.title}</td>
+                  <td
+                    className="py-4 break-words"
+                    style={{ wordBreak: "break-word" }}
+                  >
+                    <a
+                      href={publicity.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      {publicity.url}
+                    </a>
+                  </td>
+                  <td className="flex items-center justify-center space-x-4 py-4">
+                    <button
+                      className="text-blue-500 hover:text-blue-700"
+                      onClick={() => {
+                        setErrorMessage("");
+                        setSelectedPublicity(publicity);
+                        setFormData({
+                          title: publicity.title,
+                          url: publicity.url,
+                        });
+                        setIsEditModalOpen(true);
+                      }}
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => {
+                        setSelectedPublicity(publicity);
+                        setIsDeleteModalOpen(true);
+                      }}
+                    >
+                      <FaTrashAlt />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="py-4 text-center text-gray-500">
+                  No hay resultados para tu búsqueda.
+                </td>
+              </tr>
+            )
+          ) : publicities.length > 0 ? (
+            publicities.map((publicity) => (
               <tr key={publicity.id} className="text-center bg-white border-b">
                 <td className="py-4">{publicity.id}</td>
                 <td className="py-4">{publicity.title}</td>
@@ -198,12 +288,6 @@ export default function Publicities() {
                 </td>
               </tr>
             ))
-          ) : publicities.length > 0 ? (
-            <tr>
-              <td colSpan="4" className="py-4 text-center text-gray-500">
-                No hay resultados para tu búsqueda.
-              </td>
-            </tr>
           ) : (
             <tr>
               <td colSpan="4" className="py-4 text-center text-gray-500">
