@@ -12,6 +12,16 @@ class SemesterController extends Controller
         $semesters = Semester::whereNull('deleted_at')->get();
         return response()->json($semesters);
     }
+
+    public function show(string $id)
+    {
+        $semester = Semester::findOrFail($id);
+        return response()->json([
+            $semester
+        ] 
+        );
+    }
+
     public function store(Request $request)
     {
         $semester = new Semester();
