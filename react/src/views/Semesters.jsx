@@ -21,6 +21,7 @@ export default function Semesters() {
   ]);
   const [errorMessage, setErrorMessage] = useState("");
   const [latestSemester, setLatestSemester] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const API_BASE_URL =
     "http://localhost/visitURP_version2/public/index.php/api";
@@ -129,6 +130,8 @@ export default function Semesters() {
       setSemesterTo("");
       setIsModalOpen(false);
       setErrorMessage("");
+
+      setSuccessMessage("Semestre registrado con éxito.");
     } catch (error) {
       console.error(
         "Error al registrar el semestre:",
@@ -228,6 +231,8 @@ export default function Semesters() {
       // Refrescar la lista de semestres
       fetchSemesters();
       setIsEditModalOpen(false);
+
+      setSuccessMessage("Semestre editado con éxito.");
     } catch (error) {
       console.error(
         "Error al actualizar el semestre:",
@@ -243,6 +248,7 @@ export default function Semesters() {
       await axios.delete(`${API_BASE_URL}/delete-semester/${semesterName}`);
       fetchSemesters();
       setIsDeleteModalOpen(false);
+      setSuccessMessage("Semestre eliminado con éxito.");
     } catch (error) {
       console.error("Error al eliminar el semestre:", error);
     }
@@ -279,6 +285,15 @@ export default function Semesters() {
   useEffect(() => {
     fetchSemesters();
   }, []);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   return (
     <div className="flex-1 overflow-auto relative z-10 bg-gray-100 p-8">
@@ -485,7 +500,6 @@ export default function Semesters() {
       )}
 
       {/* Tabla de Semestres */}
-
       <table className="min-w-full border rounded-lg overflow-hidden">
         <thead>
           <tr className="bg-gray-200 text-gray-600 uppercase text-sm">
@@ -546,6 +560,19 @@ export default function Semesters() {
           })}
         </tbody>
       </table>
+
+      {successMessage && (
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+          {successMessage}
+          <button
+            onClick={() => setSuccessMessage("")}
+            className="ml-4 text-lg font-bold"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
     </div>
   );
 }
