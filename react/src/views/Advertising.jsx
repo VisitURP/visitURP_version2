@@ -57,7 +57,7 @@ export default function Publicities() {
   const fetchPublicities = async () => {
     try {
       const response = await axios.get(
-        "http://localhost/visitURP_Backend/public/index.php/api/list-publicities"
+        "http://localhost/visitURP_version2/public/index.php/api/list-publicities"
       );
       setPublicities(response.data);
     } catch (error) {
@@ -94,7 +94,7 @@ export default function Publicities() {
     if (!validateFields()) return;
     try {
       await axios.post(
-        "http://localhost/visitURP_Backend/public/index.php/api/register-publicity",
+        "http://localhost/visitURP_version2/public/index.php/api/register-publicity",
         formData
       );
       fetchPublicities();
@@ -120,7 +120,7 @@ export default function Publicities() {
 
      try {
        await axios.put(
-         `http://localhost/visitURP_Backend/public/index.php/api/update-publicity/${selectedPublicity.id}`,
+         `http://localhost/visitURP_version2/public/index.php/api/update-publicity/${selectedPublicity.id}`,
          formData
        );
        fetchPublicities();
@@ -135,7 +135,7 @@ export default function Publicities() {
   const handleDeletePublicity = async () => {
     try {
       await axios.delete(
-        `http://localhost/visitURP_Backend/public/index.php/api/delete-publicity/${selectedPublicity.id}`
+        `http://localhost/visitURP_version2/public/index.php/api/delete-publicity/${selectedPublicity.id}`
       );
       fetchPublicities();
       setIsDeleteModalOpen(false);
