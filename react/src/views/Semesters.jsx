@@ -178,21 +178,22 @@ export default function Semesters() {
       }
     } else {
       // Calcular el semestre según los meses si no hay datos en la tabla
+      const today = new Date();
       const currentYear = today.getFullYear();
-      const currentMonth = today.getMonth() + 1; // Mes actual (de 0 a 11, sumamos 1)
+      const currentMonth = today.getMonth() + 1; // Mes actual (1-12)
 
       if (currentMonth > 8) {
-        // Después de agosto (semestre 2 del año actual)
+        // Después de agosto (semestre 1 del próximo año)
+        setSemesterYear(currentYear + 1);
+        setSemesterSuffix(1);
+      } else if (currentMonth > 3) {
+        // Entre abril y agosto (semestre 2 del año actual)
         setSemesterYear(currentYear);
         setSemesterSuffix(2);
-      } else if (currentMonth > 3) {
-        // Después de marzo pero antes de agosto (semestre 1 del año actual)
+      } else {
+        // Antes de abril (semestre 1 del año actual)
         setSemesterYear(currentYear);
         setSemesterSuffix(1);
-      } else {
-        // Antes de marzo (semestre 2 del año anterior)
-        setSemesterYear(currentYear - 1);
-        setSemesterSuffix(2);
       }
     }
   };
@@ -511,53 +512,69 @@ export default function Semesters() {
           </tr>
         </thead>
         <tbody>
-          {filteredSemesters.map((semester, index) => {
-            // Determinar si es el último elemento
-            const isLast = index === filteredSemesters.length - 1;
-            return (
-              <tr
-                key={semester.id_semester}
-                className="text-center bg-white border-b"
-              >
-                <td className="py-4">{semester.semesterName}</td>
-                <td className="py-4">
-                  {new Date(semester.semesterFrom).toLocaleDateString()}
-                </td>
-                <td className="py-4">
-                  {new Date(semester.semesterTo).toLocaleDateString()}
-                </td>
-                <td className="py-4">
-                  {new Date(semester.updated_at).toLocaleDateString()}
-                </td>
-                <td className="flex items-center justify-center space-x-4 py-4">
-                  <button
-                    className={`text-blue-500 hover:text-blue-700 ${
-                      !isLast && "opacity-50 pointer-events-none"
-                    }`}
-                    onClick={() => {
-                      setSemesterToEdit(semester);
-                      setIsEditModalOpen(true);
-                    }}
-                    disabled={!isLast}
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    className={`text-red-500 hover:text-red-700 ${
-                      !isLast && "opacity-50 pointer-events-none"
-                    }`}
-                    onClick={() => {
-                      setSemesterToDelete(semester);
-                      setIsDeleteModalOpen(true);
-                    }}
-                    disabled={!isLast}
-                  >
-                    <FaTrashAlt />
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
+          {semesters.length === 0 ? (
+            // Caso 1: No hay semestres registrados
+            <tr>
+              <td colSpan="5" className="py-4 text-center text-gray-500">
+                No hay Semestres Académicos registrados.
+              </td>
+            </tr>
+          ) : filteredSemesters.length === 0 ? (
+            // Caso 2: No hay resultados para la búsqueda
+            <tr>
+              <td colSpan="5" className="py-4 text-center text-gray-500">
+                No hay resultados para tu búsqueda.
+              </td>
+            </tr>
+          ) : (
+            // Caso 3: Mostrar los semestres filtrados
+            filteredSemesters.map((semester, index) => {
+              const isLast = index === filteredSemesters.length - 1;
+              return (
+                <tr
+                  key={semester.id_semester}
+                  className="text-center bg-white border-b"
+                >
+                  <td className="py-4">{semester.semesterName}</td>
+                  <td className="py-4">
+                    {new Date(semester.semesterFrom).toLocaleDateString()}
+                  </td>
+                  <td className="py-4">
+                    {new Date(semester.semesterTo).toLocaleDateString()}
+                  </td>
+                  <td className="py-4">
+                    {new Date(semester.updated_at).toLocaleDateString()}
+                  </td>
+                  <td className="flex items-center justify-center space-x-4 py-4">
+                    <button
+                      className={`text-blue-500 hover:text-blue-700 ${
+                        !isLast && "opacity-50 pointer-events-none"
+                      }`}
+                      onClick={() => {
+                        setSemesterToEdit(semester);
+                        setIsEditModalOpen(true);
+                      }}
+                      disabled={!isLast}
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      className={`text-red-500 hover:text-red-700 ${
+                        !isLast && "opacity-50 pointer-events-none"
+                      }`}
+                      onClick={() => {
+                        setSemesterToDelete(semester);
+                        setIsDeleteModalOpen(true);
+                      }}
+                      disabled={!isLast}
+                    >
+                      <FaTrashAlt />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
 
@@ -572,7 +589,6 @@ export default function Semesters() {
           </button>
         </div>
       )}
-
     </div>
   );
 }
