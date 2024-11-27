@@ -6,6 +6,7 @@ use App\Models\VisitorInfoXApplicant;
 use App\Models\VisitorV;
 use App\Models\visitorP;
 use App\Models\Semester;
+use App\Models\Ubigeo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Http\JsonResponse;
@@ -404,37 +405,36 @@ class VisitorInfoXApplicantController extends Controller
     }
 
     public function getVirtualVisitorsByDistrict()
-{
-    $districtCounts = [];
-    $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
+    {
+        $districtCounts = [];
+        $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
 
-    foreach ($virtualVisitors as $visitorInfo) {
-        $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
+        foreach ($virtualVisitors as $visitorInfo) {
+            $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
 
-        if ($visitor && str_starts_with($visitor->cod_Ubigeo, '140')) {
-            $district = $visitor->cod_Ubigeo;
+            if ($visitor && str_starts_with($visitor->cod_Ubigeo, '140')) {
+                $district = $visitor->cod_Ubigeo;
 
-            if (isset($districtCounts[$district])) {
-                $districtCounts[$district]++;
-            } else {
-                $districtCounts[$district] = 1;
+                if (isset($districtCounts[$district])) {
+                    $districtCounts[$district]++;
+                } else {
+                    $districtCounts[$district] = 1;
+                }
             }
         }
+
+        $formattedCounts = [];
+        foreach ($districtCounts as $district => $count) {
+            $ubigeo = Ubigeo::where('cod_Ubigeo', $district)->first();
+            $districtName = $ubigeo ? $ubigeo->UbigeoName : 'Unknown';
+
+            $formattedCounts[] = [
+                'district' => $districtName,
+                'count' => $count
+            ];
+        }
+
+        return response()->json($formattedCounts);
     }
-
-    $formattedCounts = [];
-    foreach ($districtCounts as $district => $count) {
-        $formattedCounts[] = [
-            'district' => $district,
-            'count' => $count
-        ];
-    }
-
-    // Devolvemos el arreglo en formato JSON
-    return response()->json($formattedCounts);
-}
-
-
-
 
 }
