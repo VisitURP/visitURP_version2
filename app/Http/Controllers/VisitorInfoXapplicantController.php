@@ -402,4 +402,42 @@ class VisitorInfoXApplicantController extends Controller
         $record->delete();
         return response()->json(['message' => 'Registro eliminado']);
     }
+
+
+    public function countVirtualVisitorsByDistrict()
+    {
+        
+        $countByDistrict = VisitorV::selectRaw('cod_Ubigeo, COUNT(*) as total')
+            ->where('cod_Ubigeo', 'like', '140%') // Filtrar por códigos de distrito que empiezan con '140'
+            ->where('visitorType', 'V') // Asegurarte de que tienes un campo para el tipo de visitante
+            ->groupBy('cod_Ubigeo') // Agrupar por distrito
+            ->get();
+
+        return response()->json($countByDistrict);
+    }
+
+    public function count()
+{
+    $counterByDistrict = []; // Array para almacenar los conteos por distrito
+    
+    // Obtener todos los visitantes virtuales
+    $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
+    
+    foreach ($virtualVisitors as $visitorInfo) {
+        // Encontrar el visitante relacionado
+        $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
+        
+        // Verificar que el visitante pertenezca a un distrito de Lima y cumpla con los filtros
+        if ($visitor && str_starts_with($visitor->cod_Ubigeo, '140')) {
+            // Incrementar el contador del distrito en el array
+            if (!isset($counterByDistrict[$visitor->cod_Ubigeo])) {
+                $counterByDistrict[$visitor->cod_Ubigeo] = 0;
+            }
+            $counterByDistrict[$visitor->cod_Ubigeo]++;
+        }
+    }
+    
+    return response()->json($counterByDistrict);
+}
+
 }

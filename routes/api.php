@@ -147,6 +147,8 @@ Route::put('update-visitorXapplicant/{id}', [VisitorInfoXApplicantController::cl
 
 Route::delete('delete-visitorXapplicant/{id}', [VisitorInfoXApplicantController::class, 'destroy']);
 
+Route::get('contar-visitorsV', [VisitorInfoXApplicantController::class, 'countVirtualVisitorsByDistrict']);
+
 
 //academicInterest table
 Route::post('register-academicInterest', [AcademicInterestController::class, 'store']);
