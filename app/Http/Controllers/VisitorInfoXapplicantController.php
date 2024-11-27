@@ -412,7 +412,7 @@ class VisitorInfoXApplicantController extends Controller
         foreach ($virtualVisitors as $visitorInfo) {
             $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
 
-            if ($visitor && str_starts_with($visitor->cod_Ubigeo, '140')) {
+            if ($visitor && str_starts_with($visitor->cod_Ubigeo, '1401')) {
                 $district = $visitor->cod_Ubigeo;
 
                 if (isset($districtCounts[$district])) {
