@@ -402,4 +402,39 @@ class VisitorInfoXApplicantController extends Controller
         $record->delete();
         return response()->json(['message' => 'Registro eliminado']);
     }
+
+    public function getVirtualVisitorsByDistrict()
+{
+    $districtCounts = [];
+    $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
+
+    foreach ($virtualVisitors as $visitorInfo) {
+        $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
+
+        if ($visitor && str_starts_with($visitor->cod_Ubigeo, '140')) {
+            $district = $visitor->cod_Ubigeo;
+
+            if (isset($districtCounts[$district])) {
+                $districtCounts[$district]++;
+            } else {
+                $districtCounts[$district] = 1;
+            }
+        }
+    }
+
+    $formattedCounts = [];
+    foreach ($districtCounts as $district => $count) {
+        $formattedCounts[] = [
+            'district' => $district,
+            'count' => $count
+        ];
+    }
+
+    // Devolvemos el arreglo en formato JSON
+    return response()->json($formattedCounts);
+}
+
+
+
+
 }
