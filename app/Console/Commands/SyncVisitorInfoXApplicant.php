@@ -86,9 +86,35 @@ class SyncVisitorInfoXApplicant extends Command
         ->orderBy('documentNumber')
         ->get();
 
+        foreach($filteredVisitorV as $docs)
+        {
+            $this->info("Filtered VisitorV: " . $docs['documentNumber']);
+            $this->info("_________________ " );
+
+        }
+
+        foreach($filteredVisitorP as $docs)
+        {
+            $this->info("Filtered VisitorP: " . $docs['docNumber']);
+            $this->info("_________________ " );
+
+        }
+
+        foreach($filteredApplicant as $docs)
+        {
+            $this->info("Filtered Applicant: " . $docs['documentNumber']);
+            $this->info("_________________ " );
+
+        }
+
+       
+
+
         $this->info("Filtered VisitorV: " . $filteredVisitorV->count());
         $this->info("Filtered VisitorP: " . $filteredVisitorP->count());
         $this->info("Filtered Applicant: " . $filteredApplicant->count());
+
+        
 
         
         
@@ -140,62 +166,25 @@ class SyncVisitorInfoXApplicant extends Command
         
             $recorrerlista++;
         }
+
+        $this->info("" . $docV);
+        $this->info("" . $docP);
+
+        // $this->info("filteredV" . $filteredVisitorV[$vPointer]->documentNumber);
+        $this->info("vpointer" . $vPointer);
+        // $this->info("filteredP" . $filteredVisitorP[$pPointer]->docNumber);
+        $this->info("ppointer" . $pPointer);
         
 
-        // while ($vPointer <= count($filteredVisitorV) ) {
-        
-        // if($vPointer = count($filteredVisitorV))
-        // {
-        //     $docV = 99999999999999999999999; 
-        // }
 
-        // if($pPointer = count($filteredVisitorP))
-        // { 
-        //     $docP = 9999999999999999999999; 
-        // }
+        foreach($uniqueDocs as $docs)
+        {
+            $this->info($docs['document']);
+            $this->info($docs['fk_id_visitor']);
+            $this->info($docs['visitor_type']);
+            $this->info('___________________');
 
-        // if($docV === $docP)
-        // {
-        //     $this->info("Adding Both: " . $docV);
-            
-        //     $id_visitorVP = $filteredVisitorV[$vPointer]->id_visitorV . '_' . $filteredVisitorP[$pPointer]->id_visitorP;
-            
-        //     $uniqueDocs[$recorrerlista] = [
-        //         'document' => $docV,
-        //         'fk_id_visitor' => $id_visitorVP,
-        //         'visitor_type' => 'B',
-        //     ];
-            
-        //     $vPointer++;
-        //     $pPointer++;
-        // }
-
-        // else if ($docV < $docP) {
-        //     $this->info("Adding VisitorV: " . $filteredVisitorV[$vPointer]->documentNumber);
-        //     $uniqueDocs[$recorrerlista] = [
-        //         'document' => $docV,
-        //         'fk_id_visitor' => $filteredVisitorV[$vPointer]->id_visitorV,
-        //         'visitor_type' => 'V',
-        //     ];
-        //     $vPointer++;
-        // }
-
-        // else
-        // {
-        //     $this->info("Adding Physical visitors: " . $docP);
-        //     $uniqueDocs[$recorrerlista] = [
-        //         'document' => $docP,
-        //         'fk_id_visitor' => $filteredVisitorP[$pPointer]->id_visitorP,
-        //         'visitor_type' => 'P',
-        //     ];
-            
-        //     $pPointer++;
-            
-        // }
-
-        //     $recorrerlista++;
-
-        // }
+        }
 
         // Sincronización de UniqueDocs y Applicants
         $uniqueIndex = 0;
@@ -210,16 +199,20 @@ class SyncVisitorInfoXApplicant extends Command
                 $aPointer++;
                 $uniqueIndex++;
             } 
-            if ($docA < $docU) {
+           else if ($docA < $docU) {
                 $this->updateOrCreateVisitorInfo($filteredApplicant[$aPointer], null);
                 $aPointer++;
-            } 
+            }else{
                 $this->updateOrCreateVisitorInfo(null, $uniqueDocs[$uniqueIndex]);
                 $uniqueIndex++;
+            } 
+           
             
         }
 
         
+
+
 
         // while ($aPointer <= count($filteredApplicant)) {
         //     $docU = $uniqueDocs[$uniqueIndex]['document'];
