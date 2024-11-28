@@ -157,6 +157,10 @@ Route::get('total-visitorsVByArea', [VisitorInfoXApplicantController::class, 'ge
 
 Route::get('total-VisitsWithDetailsByBuiltArea', [VisitorInfoXApplicantController::class, 'getVisitsWithDetailsByBuiltArea']);
 
+Route::get('details-visitorsV', [VisitorInfoXApplicantController::class, 'getVirtualVisitorsfromVisitorInfo']);
+
+Route::get('details-visitorsP', [VisitorInfoXApplicantController::class, 'getPhysicalVisitorsFromInfo']);
+
 
 //academicInterest table
 Route::post('register-academicInterest', [AcademicInterestController::class, 'store']);
