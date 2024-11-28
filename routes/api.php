@@ -151,6 +151,12 @@ Route::get('total-visitorsVFromLima', [VisitorInfoXApplicantController::class, '
 
 Route::get('total-visitorsVBydisctictFromLima', [VisitorInfoXApplicantController::class, 'CountVisitorsByDistrictfromLima']);
 
+Route::get('total-MostAreaVisited', [VisitorInfoXApplicantController::class, 'getMostVisitedBuiltAreas']);
+
+Route::get('total-visitorsVByArea', [VisitorInfoXApplicantController::class, 'getVisitsByBuiltArea']);
+
+Route::get('total-VisitsWithDetailsByBuiltArea', [VisitorInfoXApplicantController::class, 'getVisitsWithDetailsByBuiltArea']);
+
 
 //academicInterest table
 Route::post('register-academicInterest', [AcademicInterestController::class, 'store']);
