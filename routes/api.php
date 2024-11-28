@@ -147,7 +147,9 @@ Route::put('update-visitorXapplicant/{id}', [VisitorInfoXApplicantController::cl
 
 Route::delete('delete-visitorXapplicant/{id}', [VisitorInfoXApplicantController::class, 'destroy']);
 
-Route::get('contar-visitorsV', [VisitorInfoXApplicantController::class, 'getVirtualVisitorsByDistrict']);
+Route::get('total-visitorsVFromLima', [VisitorInfoXApplicantController::class, 'getVisitorsFromLima']);
+
+Route::get('total-visitorsVBydisctictFromLima', [VisitorInfoXApplicantController::class, 'CountVisitorsByDistrictfromLima']);
 
 
 //academicInterest table
