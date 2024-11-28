@@ -6,6 +6,8 @@ use App\Models\VisitorInfoXApplicant;
 use App\Models\VisitorV;
 use App\Models\visitorP;
 use App\Models\Semester;
+use App\Models\VisitVDetail;
+use App\Models\BuiltArea;
 use App\Models\Ubigeo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -35,6 +37,115 @@ class VisitorInfoXApplicantController extends Controller
             $totalVisitors
         );
     }
+
+    public function getVisitsWithDetailsByBuiltArea()
+{
+    // Obtener todas las áreas construidas
+    $builtAreas = BuiltArea::all(['id_builtArea', 'BuiltAreaName']);
+
+    // Inicializar los resultados con cada área
+    $areaVisitDetails = [];
+    foreach ($builtAreas as $area) {
+        $areaVisitDetails[$area->id_builtArea] = [
+            'name' => $area->BuiltAreaName,
+            'visit_count' => 0,
+            'visitors' => [] // Aquí almacenaremos los visitantes
+        ];
+    }
+
+    // Contar y agregar detalles de visitantes virtuales
+    $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
+    foreach ($virtualVisitors as $visitorInfo) {
+        $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
+        if ($visitor) {
+            $details = VisitVDetail::where('fk_id_visitorV', $visitor->id_visitorV)->get();
+            foreach ($details as $detail) {
+                if (isset($areaVisitDetails[$detail->fk_id_builtArea])) {
+                    $areaVisitDetails[$detail->fk_id_builtArea]['visit_count']++;
+                    $areaVisitDetails[$detail->fk_id_builtArea]['visitors'][] = [
+                        'name' => $visitor->name,
+                        'lastName' => $visitor->lastName,
+                        'email' => $visitor->email,
+                        'phone' => $visitor->phone
+                    ];
+                }
+            }
+        }
+    }
+
+    // Contar y agregar detalles de visitantes físicos
+    $physicalVisitors = VisitorInfoXApplicant::where('visitor_type', 'P')->get();
+    foreach ($physicalVisitors as $visitorInfo) {
+        $visitor = VisitorP::find($visitorInfo->fk_id_visitor);
+        if ($visitor) {
+            $details = VisitVDetail::where('fk_id_visitorV', $visitor->id_visitorP)->get();
+            foreach ($details as $detail) {
+                if (isset($areaVisitDetails[$detail->fk_id_builtArea])) {
+                    $areaVisitDetails[$detail->fk_id_builtArea]['visit_count']++;
+                    $areaVisitDetails[$detail->fk_id_builtArea]['visitors'][] = [
+                        'name' => $visitor->name,
+                        'lastName' => $visitor->lastName,
+                        'email' => $visitor->email,
+                        'phone' => $visitor->phone
+                    ];
+                }
+            }
+        }
+    }
+
+    // Contar y agregar detalles de visitantes combinados (Both)
+    $BothVisitors = VisitorInfoXApplicant::where('visitor_type', 'B')->get();
+    foreach ($BothVisitors as $visitorInfo) {
+        $ids = explode('_', $visitorInfo->fk_id_visitor);
+        $virtualId = $ids[0];
+        $physicalId = $ids[1];
+
+        $visitorV = VisitorV::find($virtualId);
+        $visitorP = VisitorP::find($physicalId);
+
+        if ($visitorV) {
+            $details = VisitVDetail::where('fk_id_visitorV', $visitorV->id_visitorV)->get();
+            foreach ($details as $detail) {
+                if (isset($areaVisitDetails[$detail->fk_id_builtArea])) {
+                    $areaVisitDetails[$detail->fk_id_builtArea]['visit_count']++;
+                    $areaVisitDetails[$detail->fk_id_builtArea]['visitors'][] = [
+                        'name' => $visitorV->name,
+                        'lastName' => $visitorV->lastName,
+                        'email' => $visitorV->email,
+                        'phone' => $visitorV->phone
+                    ];
+                }
+            }
+        }
+
+        if ($visitorP) {
+            $details = VisitVDetail::where('fk_id_visitorV', $visitorP->id_visitorP)->get();
+            foreach ($details as $detail) {
+                if (isset($areaVisitDetails[$detail->fk_id_builtArea])) {
+                    $areaVisitDetails[$detail->fk_id_builtArea]['visit_count']++;
+                    $areaVisitDetails[$detail->fk_id_builtArea]['visitors'][] = [
+                        'name' => $visitorP->name,
+                        'lastName' => $visitorP->lastName,
+                        'email' => $visitorP->email,
+                        'phone' => $visitorP->phone
+                    ];
+                }
+            }
+        }
+    }
+
+    // // Imprimir resultados
+    // foreach ($areaVisitDetails as $id => $data) {
+    //     echo "Área: {$data['name']} (ID: $id) - Visitas: {$data['visit_count']}\n";
+    //     foreach ($data['visitors'] as $visitor) {
+    //         echo "    Visitante: {$visitor['name']} - Email: {$visitor['email']} - Teléfono: {$visitor['phone']}\n";
+    //     }
+    // }
+
+    // Retornar como JSON (opcional)
+    return response()->json($areaVisitDetails);
+}
+
 
     public function getVisitorInfosByGender($gender) 
    {
@@ -201,11 +312,7 @@ class VisitorInfoXApplicantController extends Controller
     {
         $counter = 0;
 
-        // Validar que el código de ubigeo no esté vacío
-        // if (empty($ubigeocode)) {
-        //     return response()->json(['error' => 'El código de ubigeo no puede estar vacío.'], 400);
-        // }
-
+        
         // Contar visitantes virtuales
         $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
         foreach ($virtualVisitors as $visitorInfo) {
@@ -226,7 +333,7 @@ class VisitorInfoXApplicantController extends Controller
             }
        }
 
-       // Contar visitantes presenciales
+       // Contar visitantes both
        $BothVisitors = VisitorInfoXApplicant::where('visitor_type', 'B')->get();
        foreach ($BothVisitors as $visitorInfo) {
         
@@ -307,6 +414,67 @@ class VisitorInfoXApplicantController extends Controller
 
     return response()->json($regionCount);
 }
+
+    public function getMostVisitedBuiltAreas()
+    {
+        // Obtener las áreas construidas más visitadas con sus nombres
+        $mostVisitedBuiltAreas = VisitVDetail::select('fk_id_builtArea', DB::raw('COUNT(*) as visit_count'))
+            ->groupBy('fk_id_builtArea')
+            ->orderBy('visit_count', 'desc')
+            ->get();
+
+        // Cargar los nombres de las áreas construidas usando relaciones (asumiendo que tienes el modelo relacionado)
+        foreach ($mostVisitedBuiltAreas as $area) {
+            $builtArea = BuiltArea::find($area->fk_id_builtArea); // Relación al modelo BuiltArea
+            $area->builtAreaName = $builtArea ? $builtArea->builtAreaName : 'Área desconocida'; // Manejo de nombres
+        }
+
+        // Imprimir resultados
+        foreach ($mostVisitedBuiltAreas as $area) {
+            // echo "Área: {$area->builtAreaName} - Visitas: {$area->visit_count}\n";
+            return response()->json("Área: {$area->builtAreaName} - Visitas: {$area->visit_count}\n");
+        }
+
+        // // Retornar como JSON (opcional)
+        // return response()->json($mostVisitedBuiltAreas);
+    }
+
+    public function getVisitsByBuiltArea()
+{
+    // Obtener todas las áreas construidas
+    $builtAreas = BuiltArea::all(['id_builtArea', 'BuiltAreaName']);
+
+    // Inicializar el resultado con cada área y un conteo de visitas en 0
+    $areaVisitCounts = [];
+    foreach ($builtAreas as $area) {
+        $areaVisitCounts[$area->id_builtArea] = [
+            'name' => $area->BuiltAreaName,
+            'visit_count' => 0
+        ];
+    }
+
+    // Contar las visitas por área construida
+    $visitCounts = VisitVDetail::select('fk_id_builtArea', DB::raw('COUNT(*) as visit_count'))
+        ->groupBy('fk_id_builtArea')
+        ->get();
+
+    // Actualizar los conteos en el resultado
+    foreach ($visitCounts as $count) {
+        if (isset($areaVisitCounts[$count->fk_id_builtArea])) {
+            $areaVisitCounts[$count->fk_id_builtArea]['visit_count'] = $count->visit_count;
+        }
+    }
+
+    // // Imprimir los resultados
+    // foreach ($areaVisitCounts as $id => $data) {
+    //     echo "Área: {$data['name']} (ID: $id) - Visitas: {$data['visit_count']}\n";
+    // }
+
+    // Retornar como JSON (opcional)
+    return response()->json($areaVisitCounts);
+}
+
+
 
 
     public function getVisitorsBySemester($id_semestre)
