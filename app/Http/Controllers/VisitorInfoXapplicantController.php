@@ -6,6 +6,7 @@ use App\Models\VisitorInfoXApplicant;
 use App\Models\VisitorV;
 use App\Models\visitorP;
 use App\Models\Semester;
+use App\Models\Ubigeo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Http\JsonResponse;
@@ -154,7 +155,7 @@ class VisitorInfoXApplicantController extends Controller
         foreach ($virtualVisitors as $visitorInfo) {
             // Obtener el visitante virtual usando el fk_id_visitor
             $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
-            if ($visitor && $visitor->cod_Ubigeo === $ubigeocode) {
+            if ($visitor && $visitor->cod_Ubigeo === $ubigeocode ) {
                 $counter++;
             }
         }
@@ -195,6 +196,118 @@ class VisitorInfoXApplicantController extends Controller
         // Retornar el conteo en formato JSON
             return response()->json(['total_visitorsbyResidence' => $counter]);
         }
+
+        public function getVisitorsFromLima()
+    {
+        $counter = 0;
+
+        // Validar que el código de ubigeo no esté vacío
+        // if (empty($ubigeocode)) {
+        //     return response()->json(['error' => 'El código de ubigeo no puede estar vacío.'], 400);
+        // }
+
+        // Contar visitantes virtuales
+        $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
+        foreach ($virtualVisitors as $visitorInfo) {
+            // Obtener el visitante virtual usando el fk_id_visitor
+            $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
+            if ($visitor && str_starts_with($visitor->cod_Ubigeo, '1401') ) {
+                $counter++;
+            }
+        }
+
+        // Contar visitantes físicos
+        $physicalVisitors = VisitorInfoXApplicant::where('visitor_type', 'P')->get();
+        foreach ($physicalVisitors as $visitorInfo) {
+        // Obtener el visitante físico usando el fk_id_visitor
+        $visitor = visitorP::find($visitorInfo->fk_id_visitor);
+        if ($visitor && str_starts_with($visitor->cod_Ubigeo, '1401')) {
+            $counter++;
+            }
+       }
+
+       // Contar visitantes presenciales
+       $BothVisitors = VisitorInfoXApplicant::where('visitor_type', 'B')->get();
+       foreach ($BothVisitors as $visitorInfo) {
+        
+        // Obtener el género del visitante usando el fk_id_visitor
+        // Desconcatenar usando explode
+        $ids = explode('_', $visitorInfo->fk_id_visitor);
+
+        // Acceder a los IDs
+        $virtualId = $ids[0]; // 12
+        $physicalId = $ids[1]; // 3
+
+        $visitorV = VisitorV::find($virtualId);
+        $visitorP = visitorP::find($physicalId);
+        
+            if (str_starts_with($visitorV->cod_Ubigeo, '1401')) {
+                $counter++;
+            } elseif (str_starts_with($visitor->cod_Ubigeo, '1401')) {
+                $counter++;
+            }        
+        
+       }
+
+        // Retornar el conteo en formato JSON
+            return response()->json(['total_visitorsfromLima' => $counter]);
+        }
+
+        
+
+   public function CountVisitorsByDistrictfromLima()
+{
+    // Obtener todas las regiones de Lima Metropolitana (donde cod_Ubigeo empieza con '1401')
+    $regions = Ubigeo::where('cod_Ubigeo', 'like', '1401%')->get(['cod_Ubigeo', 'UbigeoName']);
+
+    // Inicializar el conteo por región
+    $regionCount = [];
+    foreach ($regions as $region) {
+        $regionCount[$region->cod_Ubigeo] = [
+            'name' => $region->UbigeoName,
+            'count' => 0
+        ];
+    }
+
+    // Procesar visitantes virtuales
+    $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
+    foreach ($virtualVisitors as $visitorInfo) {
+        $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
+        if ($visitor && str_starts_with($visitor->cod_Ubigeo, '1401')) {
+            $regionCount[$visitor->cod_Ubigeo]['count']++;
+        }
+    }
+
+    // Procesar visitantes físicos
+    $physicalVisitors = VisitorInfoXApplicant::where('visitor_type', 'P')->get();
+    foreach ($physicalVisitors as $visitorInfo) {
+        $visitor = VisitorP::find($visitorInfo->fk_id_visitor);
+        if ($visitor && str_starts_with($visitor->cod_Ubigeo, '1401')) {
+            $regionCount[$visitor->cod_Ubigeo]['count']++;
+        }
+    }
+
+    // Procesar visitantes mixtos
+    $bothVisitors = VisitorInfoXApplicant::where('visitor_type', 'B')->get();
+    foreach ($bothVisitors as $visitorInfo) {
+        $ids = explode('_', $visitorInfo->fk_id_visitor);
+        $virtualId = $ids[0];
+        $physicalId = $ids[1];
+
+        $visitorV = VisitorV::find($virtualId);
+        $visitorP = VisitorP::find($physicalId);
+
+        if ($visitorV && str_starts_with($visitorV->cod_Ubigeo, '1401')) {
+            $regionCount[$visitorV->cod_Ubigeo]['count']++;
+        }
+        if ($visitorP && str_starts_with($visitorP->cod_Ubigeo, '1401')) {
+            $regionCount[$visitorP->cod_Ubigeo]['count']++;
+        }
+    }
+
+    return response()->json($regionCount);
+}
+
 
     public function getVisitorsBySemester($id_semestre)
     {
@@ -259,34 +372,6 @@ class VisitorInfoXApplicantController extends Controller
         ]);
 
     }
-
-    //  //tengo que adecuarlo
-    //  public function getMonthlyPhysicalVisitors(Request $request)
-    //  {
-    //      // Usa el año actual o el año especificado en la solicitud
-    //      $year = $request->query('year', date('Y'));
- 
-    //      $monthlyVisitors = [];
- 
-    //      // Bucle para contar visitantes en cada mes del año
-    //      for ($month = 1; $month <= 12; $month++) {
-    //      $count = visitorP::whereYear('visitDate', $year)
-    //                       ->whereMonth('visitDate', $month)
-    //                       ->count();
- 
-    //      // Log para verificar el conteo por mes
-    //      Log::info("Contando visitantes para el mes $month en el año $year: $count");
- 
-    //      $monthlyVisitors[$month] = $count;
-    //      }
- 
-    //      // Retornar el resultado en formato JSON
-    //      return response()->json([
-    //          'year' => $year,
-    //          'monthly_visitors' => $monthlyVisitors
-    //      ]);
-    //  }
-
 
 
      public function syncVisitorInfoXApplicant(): JsonResponse
@@ -402,4 +487,6 @@ class VisitorInfoXApplicantController extends Controller
         $record->delete();
         return response()->json(['message' => 'Registro eliminado']);
     }
+
+
 }
