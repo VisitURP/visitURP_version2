@@ -38,6 +38,141 @@ class VisitorInfoXApplicantController extends Controller
         );
     }
 
+    public function getVirtualVisitorsfromVisitorInfo()
+    {
+        // Inicializar el array para almacenar los visitantes virtuales
+        $virtualVisitors = [];
+
+        // Obtener los visitantes virtuales
+        $virtualVisitorsData = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
+        foreach ($virtualVisitorsData as $visitorInfo) {
+            // Obtener el visitante virtual usando fk_id_visitor
+            $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
+            if ($visitor) {
+                // Agregar el visitante virtual a la lista
+                $virtualVisitors[] = [
+                    'id_visitorV' => $visitor->id_visitorV,
+                    'name' => $visitor->name,
+                    'lastName' => $visitor->lastName,
+                    'email' => $visitor->email,
+                    'fk_docType_id' => $visitor->fk_docType_id,
+                    'documentNumber' => $visitor->documentNumber,
+                    'phone' => $visitor->phone,
+                    'cod_Ubigeo' => $visitor->cod_Ubigeo,
+                    'educationalInstitution' => $visitor->educationalInstitution,
+                    'birthDate' => $visitor->birthDate,
+                    'gender' => $visitor->gender,
+                ];
+            }
+        }
+
+        // Obtener los visitantes de tipo Both (virtual + físico) y agregarlos a la lista de visitantes virtuales
+        $bothVisitors = VisitorInfoXApplicant::where('visitor_type', 'B')->get();
+        foreach ($bothVisitors as $visitorInfo) {
+            // Desconcatenar el fk_id_visitor usando explode para obtener los dos IDs (virtual y físico)
+            $ids = explode('_', $visitorInfo->fk_id_visitor);
+
+            // Acceder a los IDs de los visitantes virtual y físico
+            $virtualId = $ids[0]; // ID del visitante virtual
+
+            // Obtener el visitante virtual
+            $visitorV = VisitorV::find($virtualId);
+            
+            if ($visitorV) {
+                // Agregar el visitante virtual (del tipo Both) a la lista
+                $virtualVisitors[] = [
+                    'id_visitorV' => $visitorV->id_visitorV,
+                    'name' => $visitorV->name,
+                    'lastName' => $visitorV->lastName,
+                    'email' => $visitorV->email,
+                    'fk_docType_id' => $visitorV->fk_docType_id,
+                    'documentNumber' => $visitorV->documentNumber,
+                    'phone' => $visitorV->phone,
+                    'cod_Ubigeo' => $visitorV->cod_Ubigeo,
+                    'educationalInstitution' => $visitorV->educationalInstitution,
+                    'birthDate' => $visitorV->birthDate,
+                    'gender' => $visitorV->gender,
+                ];
+            }
+            
+        }
+
+        usort($virtualVisitors, function($a, $b) {
+            return $a['id_visitorV'] <=> $b['id_visitorV'];  // Comparación ascendente
+        });
+
+        // Retornar los visitantes virtuales (incluyendo los de tipo Both)
+        return response()->json($virtualVisitors);
+    }
+
+    public function getPhysicalVisitorsFromInfo()
+    {
+        // Inicializar el array para almacenar los visitantes presenciales
+        $physicalVisitors = [];
+
+        // Obtener los visitantes físicos
+        $physicalVisitorsData = VisitorInfoXApplicant::where('visitor_type', 'P')->get();
+        foreach ($physicalVisitorsData as $visitorInfo) {
+            // Obtener el visitante físico usando fk_id_visitor
+            $visitor = VisitorP::find($visitorInfo->fk_id_visitor);
+            if ($visitor) {
+                // Agregar el visitante físico a la lista
+                $physicalVisitors[] = [
+                    'id_visitorP' => $visitor->id_visitorP,
+                    'name' => $visitor->name,
+                    'lastName' => $visitor->lastName,
+                    'email' => $visitor->email,
+                    'fk_docType_id' => $visitor->fk_docType_id,
+                    'docNumber' => $visitor->docNumber,
+                    'phone' => $visitor->phone,
+                    'cod_Ubigeo' => $visitor->cod_Ubigeo,
+                    'educationalInstitution' => $visitor->educationalInstitution,
+                    'birthDate' => $visitor->birthDate,
+                    'gender' => $visitor->gender,
+                ];
+            }
+        }
+
+        // Obtener los visitantes de tipo Both (virtual + físico) y agregarlos a la lista de visitantes físicos
+        $bothVisitors = VisitorInfoXApplicant::where('visitor_type', 'B')->get();
+        foreach ($bothVisitors as $visitorInfo) {
+            // Desconcatenar el fk_id_visitor usando explode para obtener los dos IDs (virtual y físico)
+            $ids = explode('_', $visitorInfo->fk_id_visitor);
+
+            // Acceder a los IDs de los visitantes virtual y físico
+            $physicalId = $ids[1]; // ID del visitante físico
+
+            // Obtener el visitante físico
+            $visitorP = VisitorP::find($physicalId);
+            
+            if ($visitorP) {
+                // Agregar el visitante físico (del tipo Both) a la lista
+                $physicalVisitors[] = [
+                    'id_visitorP' => $visitorP->id_visitorP,
+                    'name' => $visitorP->name,
+                    'lastName' => $visitorP->lastName,
+                    'email' => $visitorP->email,
+                    'fk_docType_id' => $visitorP->fk_docType_id,
+                    'docNumber' => $visitorP->docNumber,
+                    'phone' => $visitorP->phone,
+                    'cod_Ubigeo' => $visitorP->cod_Ubigeo,
+                    'educationalInstitution' => $visitorP->educationalInstitution,
+                    'birthDate' => $visitorP->birthDate,
+                    'gender' => $visitorP->gender,
+                ];
+            }
+        }
+
+        usort($physicalVisitors, function($a, $b) {
+            return $a['id_visitorP'] <=> $b['id_visitorP'];  // Comparación ascendente
+        });
+
+        // Retornar los visitantes presenciales (incluyendo los de tipo Both)
+        return response()->json($physicalVisitors);
+    }
+
+
+
     public function getVisitsWithDetailsByBuiltArea()
 {
     // Obtener todas las áreas construidas
