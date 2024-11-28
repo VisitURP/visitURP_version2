@@ -66,6 +66,7 @@ class SyncVisitorInfoXApplicant extends Command
             // Filtramos los visitantes tipo 'V'
         $filteredVisitorV = VisitorV::whereNotNull('documentNumber')
         ->where('documentNumber', '!=', '')
+        // ->where('fk_docType_id', '1')
         ->whereNotIn('id_visitorV', $existingVisitorVIds) // Excluye visitantes ya registrados como 'V'
         ->whereNotIn('id_visitorV', $visitorVIdsFromBoth) // Excluye visitantes registrados como 'Both'
         ->orderBy('documentNumber')
@@ -74,6 +75,7 @@ class SyncVisitorInfoXApplicant extends Command
         // Filtramos los visitantes tipo 'P'
         $filteredVisitorP = visitorP::whereNotNull('docNumber')
         ->where('docNumber', '!=', '')
+        // ->where('fk_docType_id', '1')
         ->whereNotIn('id_visitorP', $existingVisitorPIds) // Excluye visitantes ya registrados como 'P'
         ->whereNotIn('id_visitorP', $visitorPIdsFromBoth) // Excluye visitantes registrados como 'Both'
         ->orderBy('docNumber')
@@ -82,6 +84,7 @@ class SyncVisitorInfoXApplicant extends Command
         // Filtramos los visitantes tipo 'P'
         $filteredApplicant = Applicant::whereNotNull('documentNumber')
         ->where('documentNumber', '!=', '')
+        // ->where('fk_docType_id', '1')
         ->whereNotIn('id_applicant', $existingApplicantIds) // Excluye visitantes ya registrados como 'P'
         ->orderBy('documentNumber')
         ->get();

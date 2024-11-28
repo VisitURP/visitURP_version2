@@ -285,7 +285,7 @@ Route::delete('delete-ubigeo/{id}', [UbigeoController::class, 'destroy']);
 Route::get('import-ubigeos', [ImportController::class, 'importUbigeos']);
 
 
-//Dashboard
+//Stadistics
 Route::get('total-visitors', [VisitorInfoXApplicantController::class, 'getTotalVisitors']);
 
 Route::get('visitors/gender/{gender}', [VisitorVController::class, 'getVisitorsByGender']);
@@ -307,6 +307,9 @@ Route::get('inquiries-ToAnswer', [ChatBot_InquiryController::class, 'countInquir
 Route::get('inquiries-Answered', [ChatBot_InquiryController::class, 'countInquiryAnswered']);
 
 Route::get('getVisitorBySemester/{semesterName}', [VisitorInfoXApplicantController::class, 'getVisitorsBySemester']);
+
+Route::get('count-visitorsVByDistrict', [VisitorInfoXApplicantController::class, 'getVirtualVisitorsByDistrict']);
+//Dashboard
 
 
 //visitAll_v2

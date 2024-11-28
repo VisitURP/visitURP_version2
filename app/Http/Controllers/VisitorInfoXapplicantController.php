@@ -6,6 +6,7 @@ use App\Models\VisitorInfoXApplicant;
 use App\Models\VisitorV;
 use App\Models\visitorP;
 use App\Models\Semester;
+use App\Models\Ubigeo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Http\JsonResponse;
@@ -260,32 +261,70 @@ class VisitorInfoXApplicantController extends Controller
 
     }
 
-    //  //tengo que adecuarlo
-    //  public function getMonthlyPhysicalVisitors(Request $request)
-    //  {
-    //      // Usa el año actual o el año especificado en la solicitud
-    //      $year = $request->query('year', date('Y'));
- 
-    //      $monthlyVisitors = [];
- 
-    //      // Bucle para contar visitantes en cada mes del año
-    //      for ($month = 1; $month <= 12; $month++) {
-    //      $count = visitorP::whereYear('visitDate', $year)
-    //                       ->whereMonth('visitDate', $month)
-    //                       ->count();
- 
-    //      // Log para verificar el conteo por mes
-    //      Log::info("Contando visitantes para el mes $month en el año $year: $count");
- 
-    //      $monthlyVisitors[$month] = $count;
-    //      }
- 
-    //      // Retornar el resultado en formato JSON
-    //      return response()->json([
-    //          'year' => $year,
-    //          'monthly_visitors' => $monthlyVisitors
-    //      ]);
-    //  }
+    public function getVirtualVisitorsByDistrict()
+    {
+        $districtCounts = [];
+        $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
+        
+    //     // Contar visitantes virtuales en Both
+    //     $BothVisitors = VisitorInfoXApplicant::where('visitor_type', 'B')->get();
+    //     foreach ($BothVisitors as $visitorInfo) {
+         
+    //      // Obtener el género del visitante usando el fk_id_visitor
+    //      // Desconcatenar usando explode
+    //      $ids = explode('_', $visitorInfo->fk_id_visitor);
+
+    //      // Acceder a los IDs
+    //      $virtualId = $ids[0]; // 12
+    //      $physicalId = $ids[1]; // 3       
+        
+    //     $visitorsFromBoth = VisitorV::where('id_visitorV', $virtualId)->get();
+
+         
+       //  }
+
+
+        foreach ($virtualVisitors as $visitorInfo) {
+            $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
+
+            if ($visitor && str_starts_with($visitor->cod_Ubigeo, '1401')) {
+                $district = $visitor->cod_Ubigeo;
+
+                if (isset($districtCounts[$district])) {
+                    $districtCounts[$district]++;
+                } else {
+                    $districtCounts[$district] = 1;
+                }
+            }
+        }
+
+        // foreach ($visitorsFromBoth as $visitorInfo) {
+        //      $visitor = VisitorV::find($visitorInfo->id_visitorV);
+
+        //     if ($visitor && str_starts_with($visitor->cod_Ubigeo, '1401')) {
+        //         $district = $visitor->cod_Ubigeo;
+
+        //         if (isset($districtCounts[$district])) {
+        //             $districtCounts[$district]++;
+        //         } else {
+        //             $districtCounts[$district] = 1;
+        //         }
+        //     }
+        // }
+
+        $formattedCounts = [];
+        foreach ($districtCounts as $district => $count) {
+            $ubigeo = Ubigeo::where('cod_Ubigeo', $district)->first();
+            $districtName = $ubigeo ? $ubigeo->UbigeoName : 'Unknown';
+
+            $formattedCounts[] = [
+                'district' => $districtName,
+                'count' => $count
+            ];
+        }
+
+        return response()->json($formattedCounts);
+    }
 
 
 
