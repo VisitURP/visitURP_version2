@@ -1,229 +1,410 @@
-import React, { useState, useEffect } from 'react';
-import { FaUser, FaCheckCircle, FaSearch, FaTimes } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import axiosClient from '../axios';
-import PageComponent from "../components/PageComponent";
+import React, { useState, useEffect } from "react";
+import { FaEdit, FaTrashAlt, FaPlus, FaSearch } from "react-icons/fa";
+import axios from "axios";
 
-export default function VisitorsP() {
-  const [visits, setVisits] = useState([]);
-  const [searchId, setSearchId] = useState('');
-  const [filteredVisit, setFilteredVisit] = useState(null);
-  const [showNotFoundModal, setShowNotFoundModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedVisit, setSelectedVisit] = useState(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false); 
-  const navigate = useNavigate();
-
-  const handleRegisterClick = () => {
-    navigate('/register-visit');
-  };
-
-  const fetchVisits = async () => {
-    try {
-      const response = await axiosClient.get('/visit');
-      setVisits(response.data);
-      console.log("Datos recibidos:", response.data);
-    } catch (error) {
-      console.error("Error fetching visit:", error);
-    }
-  };
-
-  const handleDeleteClick = (visit) => {
-    setSelectedVisit(visit);
-    setShowDeleteModal(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!selectedVisit) return; 
-    console.log("Eliminando visitante con ID:", selectedVisit.ID_Visitante); 
-
-    try {
-      await axiosClient.delete(`/visit/${selectedVisit.ID_Visitante}`);
-      
-      setVisits((prevVisits) => 
-        prevVisits.filter((visit) => visit.ID_Visitante !== selectedVisit.ID_Visitante)
-      );
-
-      setShowDeleteModal(false);
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error("Error al eliminar visitante:", error);
-    }
-  };
-
-  const handleEditClick = (visit) => {
-    navigate('/edit-visit', { state: { visitData: visit } });
-  };
-
-  const handleSearchClick = () => {
-    const visit = visits.find(v => v.ID_Visitante === searchId);
-    if (visit) {
-      setFilteredVisit([visit]);
-    } else {
-      setShowNotFoundModal(true);
-    }
-  };
-
-  const handleClearSearch = () => {
-    setSearchId('');
-    setFilteredVisit(null);
-  };
+export default function Visitors() {
+  const [visitors, setVisitors] = useState([]);
+  const [filteredVisitors, setFilteredVisitors] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [selectedVisitor, setSelectedVisitor] = useState(null);
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    fetchVisits();
+    fetchVisitors();
   }, []);
 
-  const closeModal = () => {
-    setShowDeleteModal(false);
-    setSelectedVisit(null);
+  useEffect(() => {
+    const normalizeText = (text) => {
+      return text
+        .toString()
+        .normalize("NFD") // Descompone caracteres con tildes
+        .replace(/[\u0300-\u036f]/g, "") // Elimina los diacríticos
+        .toLowerCase(); // Convierte a minúsculas
+    };
+
+    if (searchQuery.trim()) {
+      setFilteredVisitors(
+        visitors.filter((visitor) => {
+          const normalizedQuery = normalizeText(searchQuery);
+          const matchesName = normalizeText(visitor.name).includes(
+            normalizedQuery
+          );
+          const matchesId = normalizeText(visitor.id.toString()).includes(
+            normalizedQuery
+          );
+          return matchesName || matchesId;
+        })
+      );
+    } else {
+      setFilteredVisitors([]);
+    }
+  }, [searchQuery, visitors]);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage("");
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  const fetchVisitors = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost/visitURP_version2/public/index.php/api/list-visitorPs"
+      );
+      setVisitors(response.data);
+    } catch (error) {
+      console.error("Error al obtener los visitantes:", error);
+    }
   };
 
-  const closeSuccessModal = () => {
-    setShowSuccessModal(false);
+  const searchVisitor = () => {
+    const query = searchQuery.trim().toLowerCase();
+    const results = visitors.filter(
+      (visitor) =>
+        visitor.id_visitorP.toString().includes(query) ||
+        visitor.name.toLowerCase().includes(query) ||
+        visitor.lastName.toLowerCase().includes(query)
+    );
+    setFilteredVisitors(results);
   };
 
-  const closeNotFoundModal = () => {
-    setShowNotFoundModal(false);
+  const validateFields = () => {
+    if (!formData.name) {
+      setErrorMessage("Por favor, ingrese el nombre del visitante.");
+      return false;
+    }
+    if (!formData.email) {
+      setErrorMessage(
+        "Por favor, ingrese el correo electrónico del visitante."
+      );
+      return false;
+    }
+    if (!formData.phone) {
+      setErrorMessage("Por favor, ingrese el teléfono del visitante.");
+      return false;
+    }
+    setErrorMessage("");
+    return true;
   };
+
+ const handleAddVisitor = async () => {
+   if (!validateFields()) return;
+   try {
+     const newVisitorData = {
+       name: formData.name,
+       lastName: formData.lastName,
+       email: formData.email,
+       fk_docType_id: 1, // Supón que el tipo de documento es 1 por defecto
+       docNumber: formData.docNumber,
+       phone: formData.phone,
+       cod_Ubigeo: formData.cod_Ubigeo,
+       educationalInstitution: formData.educationalInstitution,
+       birthDate: formData.birthDate,
+       gender: formData.gender,
+     };
+
+     await axios.post(
+       "http://localhost/visitURP_version2/public/index.php/api/register-visitorP",
+       newVisitorData
+     );
+     fetchVisitors();
+     setIsModalOpen(false);
+     setFormData({
+       name: "",
+       lastName: "",
+       email: "",
+       phone: "",
+       docNumber: "",
+       cod_Ubigeo: "",
+       educationalInstitution: "",
+       birthDate: "",
+       gender: "",
+     });
+     setSuccessMessage("Visitante registrado con éxito.");
+   } catch (error) {
+     console.error("Error al registrar el visitante:", error);
+   }
+ };
+
+  const handleEditVisitor = async () => {
+    if (!validateFields()) return;
+
+    if (
+      selectedVisitor.name === formData.name &&
+      selectedVisitor.email === formData.email &&
+      selectedVisitor.phone === formData.phone
+    ) {
+      setErrorMessage("No se realizaron modificaciones.");
+      return;
+    }
+
+    try {
+      const updatedVisitorData = {
+        name: formData.name,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        // Asegúrate de incluir todos los campos necesarios
+      };
+
+      await axios.put(
+        `http://localhost/visitURP_version2/public/index.php/api/update-visitorP/${selectedVisitor.id_visitorP}`,
+        updatedVisitorData
+      );
+      fetchVisitors();
+      setIsEditModalOpen(false);
+      setFormData({ name: "", lastName: "", email: "", phone: "" });
+      setSuccessMessage("Visitante editado con éxito.");
+    } catch (error) {
+      console.error("Error al actualizar el visitante:", error);
+    }
+  };
+
+
+ const handleDeleteVisitor = async () => {
+   try {
+     await axios.delete(
+       `http://localhost/visitURP_version2/public/index.php/api/delete-visitorInfo/${selectedVisitor.id_visitorP}`
+     );
+     fetchVisitors();
+     setIsDeleteModalOpen(false);
+     setSuccessMessage("Visitante eliminado con éxito.");
+   } catch (error) {
+     console.error("Error al eliminar el visitante:", error);
+   }
+ };
+
 
   return (
-    <PageComponent title="Gestión de Visitas Presenciales">
-      <div className="bg-white p-6 shadow sm:rounded-md">
-        <p className="text-gray-600 mb-6">
-          Puedes agregar nuevos visitantes, eliminar o cambiar información existente.
-        </p>
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center border rounded-md">
-            <input
-              type="text"
-              value={searchId}
-              onChange={(e) => setSearchId(e.target.value)}
-              placeholder="Buscar por ID"
-              className="p-2 pl-4 text-sm w-[200px] border-none outline-none"
-            />
-            {searchId && (
-              <button onClick={handleClearSearch} className="p-2">
-                <FaTimes className="text-gray-500" />
-              </button>
-            )}
-            <button onClick={handleSearchClick} className="p-2 bg-gray-200">
-              <FaSearch className="text-gray-500" />
-            </button>
-          </div>
-          <button 
-            onClick={handleRegisterClick} 
-            className="p-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
-          >
-            Registrar nueva visita
-          </button>
+    <div className="flex-1 overflow-auto relative z-10 bg-gray-100 p-8">
+      <h1 className="text-4xl font-bold text-[#282424] text-center mb-6 bg-white border border-gray-300 rounded-lg py-5">
+        Gestionar Visitantes Presenciales
+      </h1>
+      <p className="text-lg text-gray-500 mb-12 text-center">
+        Puedes agregar nuevo visitante, modificar o eliminar el existente.
+      </p>
+
+      <div className="mb-6 flex items-center gap-4">
+        <div className="flex-1 relative">
+          <FaSearch className="absolute top-3 left-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por ID o nombre"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 py-2 border border-gray-300 rounded-lg"
+          />
         </div>
-        
-        <table className="min-w-full bg-white border rounded-md text-sm">
-          <thead>
-            <tr>
-              <th className="py-2 px-4 border-b text-center whitespace-nowrap w-[150px]">Identificación del visitante</th>
-              <th className="py-2 px-4 border-b text-center whitespace-nowrap w-[130px]">Fecha de visita</th>
-              <th className="py-2 px-4 border-b text-center whitespace-nowrap w-[100px]">Hora de visita</th>
-              <th className="py-2 px-4 border-b text-center whitespace-nowrap w-[150px]">Semestre académico</th>
-              <th className="py-2 px-4 border-b text-center whitespace-nowrap w-[150px]">Provincia de origen</th>
-              <th className="py-2 px-4 border-b text-center whitespace-nowrap w-[100px]">Estado</th>
-              <th className="py-2 px-4 border-b text-center whitespace-nowrap w-[100px]">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(filteredVisit || visits).map((visit, index) => (
-              <tr key={index} className="text-center">
-                <td className="py-2 px-4 border-b flex items-center justify-center whitespace-nowrap w-[150px] text-sm">
-                  <FaUser className="mr-2 text-gray-500" /> {visit.ID_Visitante}
+        <button
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-lg flex items-center"
+          onClick={() => {
+            setErrorMessage("");
+            setIsModalOpen(true);
+          }}
+        >
+          <FaPlus className="mr-2" />
+          Registrar Visitante
+        </button>
+      </div>
+
+      <table className="min-w-full border rounded-lg overflow-hidden">
+        <thead>
+          <tr className="bg-gray-200 text-gray-600 uppercase text-sm">
+            <th className="py-3 px-6 text-center">ID</th>
+            <th className="py-3 px-6 text-center">Nombre</th>
+            <th className="py-3 px-6 text-center">Correo</th>
+            <th className="py-3 px-6 text-center">Teléfono</th>
+            <th className="py-3 px-6 text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {searchQuery.trim() ? (
+            filteredVisitors.length > 0 ? (
+              filteredVisitors.map((visitor) => (
+                <tr key={visitor.id} className="text-center bg-white border-b">
+                  <td className="py-4">{visitor.id}</td>
+                  <td className="py-4">{visitor.name}</td>
+                  <td className="py-4">{visitor.email}</td>
+                  <td className="py-4">{visitor.phone}</td>
+                  <td className="flex items-center justify-center space-x-4 py-4">
+                    <button
+                      className="text-blue-500 hover:text-blue-700"
+                      onClick={() => {
+                        setErrorMessage("");
+                        setSelectedVisitor(visitor);
+                        setFormData({
+                          name: visitor.name,
+                          email: visitor.email,
+                          phone: visitor.phone,
+                        });
+                        setIsEditModalOpen(true);
+                      }}
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => {
+                        setSelectedVisitor(visitor);
+                        setIsDeleteModalOpen(true);
+                      }}
+                    >
+                      <FaTrashAlt />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className="py-4 text-center text-gray-500">
+                  No hay resultados para tu búsqueda.
                 </td>
-                <td className="py-2 px-4 border-b text-center whitespace-nowrap w-[130px] text-sm">{visit.Fecha_Visita}</td>
-                <td className="py-2 px-4 border-b text-center whitespace-nowrap w-[100px] text-sm">{visit.Hora_Visita}</td>
-                <td className="py-2 px-4 border-b text-center whitespace-nowrap w-[150px] text-sm">{visit.Semestre}</td>
-                <td className="py-2 px-4 border-b text-center whitespace-nowrap w-[150px] text-sm">{visit.Provincia_O}</td>
-                <td className="py-2 px-4 border-b text-center whitespace-nowrap w-[100px] text-sm">{visit.Estado}</td>
-                <td className="py-2 px-4 border-b flex space-x-2 justify-center whitespace-nowrap w-[100px] text-sm">
-                  <button 
-                    onClick={() => handleEditClick(visit)} 
-                    className="p-2 text-blue-500 hover:underline">
-                    ✏️
+              </tr>
+            )
+          ) : visitors.length > 0 ? (
+            visitors.map((visitor) => (
+              <tr key={visitor.id} className="text-center bg-white border-b">
+                <td className="py-4">{visitor.id}</td>
+                <td className="py-4">{visitor.name}</td>
+                <td className="py-4">{visitor.email}</td>
+                <td className="py-4">{visitor.phone}</td>
+                <td className="flex items-center justify-center space-x-4 py-4">
+                  <button
+                    className="text-blue-500 hover:text-blue-700"
+                    onClick={() => {
+                      setErrorMessage("");
+                      setSelectedVisitor(visitor);
+                      setFormData({
+                        name: visitor.name,
+                        email: visitor.email,
+                        phone: visitor.phone,
+                      });
+                      setIsEditModalOpen(true);
+                    }}
+                  >
+                    <FaEdit />
                   </button>
-                  <button 
-                    onClick={() => handleDeleteClick(visit)} 
-                    className="p-2 text-red-500 hover:underline">
-                    🗑️
+                  <button
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => {
+                      setSelectedVisitor(visitor);
+                      setIsDeleteModalOpen(true);
+                    }}
+                  >
+                    <FaTrashAlt />
                   </button>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="5" className="py-4 text-center text-gray-500">
+                No hay visitantes registrados.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
 
-      {showNotFoundModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-75 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center w-[400px]">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mx-auto mb-4">
-              <FaTimes className="text-4xl text-red-600" />
-            </div>
-            <h2 className="text-lg font-bold mt-4">Registro no encontrado</h2>
-            <p className="text-gray-600 mt-2">No se ha encontrado ningún visitante con el ID ingresado.</p>
-            <div className="flex justify-center mt-4">
-              <button
-                onClick={closeNotFoundModal}
-                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-              >
-                OK
-              </button>
-            </div>
+      {/* Modal Add */}
+      {isModalOpen && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>Registrar Visitante</h2>
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+            />
+            <input
+              type="email"
+              placeholder="Correo"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+            />
+            <input
+              type="text"
+              placeholder="Teléfono"
+              value={formData.phone}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+            />
+            <button onClick={handleAddVisitor}>Registrar</button>
+            <button onClick={() => setIsModalOpen(false)}>Cerrar</button>
+            {errorMessage && <p className="text-red-500">{errorMessage}</p>}
           </div>
         </div>
       )}
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-75 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center w-[400px]">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mx-auto mb-4">
-              <div className="text-4xl">🗑️</div> 
-            </div>
-            <h2 className="text-lg font-bold mt-4">Confirmar Eliminación</h2>
-            <p className="text-gray-600 mt-2">¿Estás seguro de que deseas eliminar este visitante?</p>
-            <div className="flex justify-around mt-4">
-              <button
-                onClick={handleDeleteConfirm}
-                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-              >
-                Eliminar
-              </button>
-              <button
-                onClick={closeModal}
-                className="bg-gray-300 text-black px-4 py-2 rounded-md hover:bg-gray-400"
-              >
-                Cancelar
-              </button>
-            </div>
+      {/* Modal Edit */}
+      {isEditModalOpen && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>Editar Visitante</h2>
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+            />
+            <input
+              type="email"
+              placeholder="Correo"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+            />
+            <input
+              type="text"
+              placeholder="Teléfono"
+              value={formData.phone}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+            />
+            <button onClick={handleEditVisitor}>Guardar Cambios</button>
+            <button onClick={() => setIsEditModalOpen(false)}>Cerrar</button>
+            {errorMessage && <p className="text-red-500">{errorMessage}</p>}
           </div>
         </div>
       )}
 
-      {showSuccessModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-75 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center w-[400px]">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mx-auto mb-4">
-              <FaCheckCircle className="text-4xl text-green-600" /> 
-            </div>
-            <h2 className="text-lg font-bold mt-4">Visitante eliminado</h2>
-            <p className="text-gray-600 mt-2">El registro del visitante ha sido eliminado correctamente.</p>
-            <div className="flex justify-center mt-4">
-              <button
-                onClick={closeSuccessModal}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-              >
-                Aceptar
-              </button>
-            </div>
+      {/* Modal Delete */}
+      {isDeleteModalOpen && (
+        <div className="modal">
+          <div className="modal-content">
+            <p>¿Seguro que quieres eliminar este visitante?</p>
+            <button onClick={handleDeleteVisitor}>Eliminar</button>
+            <button onClick={() => setIsDeleteModalOpen(false)}>
+              Cancelar
+            </button>
           </div>
         </div>
       )}
-    </PageComponent>
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-green-500 text-white p-3 rounded mt-4">
+          {successMessage}
+        </div>
+      )}
+    </div>
   );
 }
