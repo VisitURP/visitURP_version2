@@ -38,6 +38,33 @@ class VisitorInfoXApplicantController extends Controller
         );
     }
 
+    public function getVisitorsAdmitted()
+    {
+        
+        // Sumar ambos
+        $totalVisitors =  VisitorInfoXApplicant::whereNot('visitor_type', 'NV') 
+        ->count();
+
+         // Contar visitantes con fk_id_applicant y fk_id_visitor
+         //loa postulantes que fueron visitantes
+        $visitorAndApplicantCount = VisitorInfoXApplicant::whereNotNull('fk_id_applicant')
+        ->WhereNotNull('fk_id_visitor')
+        ->count();
+
+        
+       // Contar visitantes admitidos
+        $admittedCounts = VisitorInfoXApplicant::whereNotNull('fk_id_applicant')
+            ->WhereNotNull('fk_id_visitor')
+            ->where('admitted', 1)
+            ->count();
+
+    return response()->json([
+        'visitorCounts' => $totalVisitors,
+        'postulantes que fueron visitantes count' => $visitorAndApplicantCount,
+        'admittedCounts' => $admittedCounts,
+    ]);
+    }
+
     public function getVirtualVisitorsfromVisitorInfo()
     {
         // Inicializar el array para almacenar los visitantes virtuales

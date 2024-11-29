@@ -213,36 +213,6 @@ class SyncVisitorInfoXApplicant extends Command
             
         }
 
-        
-
-
-
-        // while ($aPointer <= count($filteredApplicant)) {
-        //     $docU = $uniqueDocs[$uniqueIndex]['document'];
-        //     $docA = $filteredApplicant[$aPointer]->documentNumber;
-            
-        //     if($aPointer === count($filteredApplicant))
-        //     {
-        //         $docA = 999999999999999999;
-        //     }
-        //     if ($uniqueIndex === count($uniqueDocs)){
-        //         $docU = 999999999999999999; 
-        //     } 
-        //     // $docU = $uniqueDocs[$uniqueIndex]['document'] ?? 9999999999999999999;      
-        //     if ($docA === $docU) {
-        //         $this->updateOrCreateVisitorInfo($filteredApplicant[$aPointer], $uniqueDocs[$uniqueIndex]);
-        //         $aPointer++;
-        //         $uniqueIndex++;
-
-        //     } elseif ($docA < $docU) {
-        //         $this->updateOrCreateVisitorInfo($filteredApplicant[$aPointer], null);
-        //         $aPointer++;
-        //     } else {
-        //         $this->updateOrCreateVisitorInfo(null, $uniqueDocs[$uniqueIndex]);
-        //         $uniqueIndex++;
-        //     }
-    
-        // }
    }
             
    protected function updateOrCreateVisitorInfo($applicant, $uniqueDoc)
