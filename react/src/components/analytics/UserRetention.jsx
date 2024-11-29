@@ -36,7 +36,7 @@ const VisitorDistribution = () => {
     const fetchVisitorData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost/visitURP_Backend/public/index.php/api/academic-interests/count"
+          "http://localhost/visitURP_version2/public/index.php/api/academic-interests/count"
         );
         const apiData = response.data.academic_interests;
 

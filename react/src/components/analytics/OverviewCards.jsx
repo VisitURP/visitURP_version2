@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import {
   Users,
-  MessageSquare,
   User,
   UserPlus,
   ArrowDownRight,
@@ -13,13 +12,6 @@ import {
 const OverviewCards = () => {
   const [overviewData, setOverviewData] = useState([
     { name: "Visitantes Totales", value: "0", change: 0, icon: Users },
-    {
-      name: "Consultas por atender",
-      value: "0",
-      change: 0,
-      icon: MessageSquare,
-    },
-    { name: "Consultas atendidas", value: "0", change: 0, icon: MessageSquare },
     { name: "Visitantes Masculinos", value: "0", change: 0, icon: User },
     { name: "Visitantes Femeninos", value: "0", change: 0, icon: UserPlus },
   ]);
@@ -27,49 +19,26 @@ const OverviewCards = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [
-          totalVisitors,
-          inquiriesToAnswer,
-          answeredInquiries,
-          maleVisitors,
-          femaleVisitors,
-        ] = await Promise.all([
-          axios.get(
-            "http://localhost/visitURP_Backend/public/index.php/api/total-visitors"
-          ),
-          axios.get(
-            "http://localhost/visitURP_Backend/public/index.php/api/inquiries-ToAnswer"
-          ),
-          axios.get(
-            "http://localhost/visitURP_Backend/public/index.php/api/inquiries-Answered"
-          ),
-          axios.get(
-            "http://localhost/visitURP_Backend/public/index.php/api/visitors/gender/M"
-          ),
-          axios.get(
-            "http://localhost/visitURP_Backend/public/index.php/api/visitors/gender/F"
-          ),
-        ]);
+        const [totalVisitors, maleVisitors, femaleVisitors] = await Promise.all(
+          [
+            axios.get(
+              "http://localhost/visitURP_version2/public/index.php/api/total-visitors"
+            ),
+            axios.get(
+              "http://localhost/visitURP_version2/public/index.php/api/visitors/gender/M"
+            ),
+            axios.get(
+              "http://localhost/visitURP_version2/public/index.php/api/visitors/gender/F"
+            ),
+          ]
+        );
 
-        // Ensure correct properties are extracted
         setOverviewData([
           {
             name: "Visitantes Totales",
-            value: totalVisitors.data || "0", // Adjust as needed based on API response
+            value: totalVisitors.data || "0",
             change: 8.3,
             icon: Users,
-          },
-          {
-            name: "Consultas por atender",
-            value: inquiriesToAnswer.data || "0", // Adjust based on actual API response
-            change: 2.5,
-            icon: MessageSquare,
-          },
-          {
-            name: "Consultas atendidas",
-            value: answeredInquiries.data || "0", // Adjust based on actual API response
-            change: 5.2,
-            icon: MessageSquare,
           },
           {
             name: "Visitantes Masculinos",
@@ -93,12 +62,17 @@ const OverviewCards = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-8">
+    <div
+      className={`grid gap-5 
+        grid-cols-1 sm:grid-cols-2 
+        ${overviewData.length > 2 ? "lg:grid-cols-3" : "lg:grid-cols-2"}
+        xl:grid-cols-3`}
+    >
       {overviewData.map((item, index) => (
         <motion.div
           key={item.name}
           className="bg-white backdrop-filter backdrop-blur-lg shadow-lg
-            rounded-xl p-6 border border-gray-300"
+            rounded-xl p-6 border border-gray-300 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1 }}
