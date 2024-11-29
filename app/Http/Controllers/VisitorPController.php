@@ -6,6 +6,7 @@ use App\Models\visitorP;
 use App\Models\visitV;
 use App\Models\Semester;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class VisitorPController extends Controller
@@ -64,14 +65,26 @@ class VisitorPController extends Controller
 
     public function assignSemester($createdAt)
     {
-        // Busca el semestre correspondiente basado en la fecha de creación
-        $semester = Semester::where('semesterTo', '>=', $createdAt)
-                        ->orderBy('semesterTo', 'asc')
-                        ->first();
+        // Convierte la fecha a un objeto Carbon
+        $createdAt = Carbon::parse($createdAt);
 
-        // Retorna el id del semestre
-        return $semester ? $semester->id_semester : null;
+        Log::info("Asignando semestre para la fecha: {$createdAt}");
+
+        $semester = Semester::where('semesterFrom', '<=', $createdAt)
+            ->where('semesterTo', '>=', $createdAt)
+            ->orderBy('semesterFrom', 'asc')
+            ->first();
+
+        if ($semester) {
+            Log::info("Semestre encontrado: {$semester->semesterName}");
+            return $semester->semesterName; // Devuelve el nombre del semestre
+        } else {
+            Log::warning("No se encontró un semestre para la fecha: {$createdAt}");
+            return null; // Retorna null si no encuentra un semestre
+        }
     }
+
+
 
     /**
      * Display the specified resource.

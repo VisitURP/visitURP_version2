@@ -35,7 +35,7 @@ class VisitVDetailController extends Controller
         $validated = $request->validate([
             'fk_id_visitorV' => 'required|exists:visitor_v_s,id_visitorV',
             'fk_id_visitV' => 'required|exists:visit_v_s,id_visitV',
-            'fk_id_builtArea' => 'required|exists:built_areas,id_builtArea',
+            'fk_id_builtArea' => 'nullable|exists:built_areas,id_builtArea',
             'kindOfEvent' => 'required|string',
             'get' => 'required|string',
             'DateTime' => 'required|date_format:Y-m-d H:i:s',
@@ -73,7 +73,7 @@ class VisitVDetailController extends Controller
         $request->validate([
             'fk_id_visitorV' => ['required', 'exists:visitor_v_s,id_visitorV'],
             'fk_id_visitV' => ['required','exists:visit_v_s,id_visitV'],
-            'fk_id_builtArea' => ['required', 'exists:built_areas,id_builtArea'],
+            'fk_id_builtArea' => ['nullable', 'exists:built_areas,id_builtArea'],
             'kindOfEvent' => ['required', 'string'],
             'get' => ['required','string'],
             'DateTime' => ['required','date_format:Y-m-d H:i:s'],

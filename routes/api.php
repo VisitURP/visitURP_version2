@@ -334,6 +334,10 @@ Route::get('visitors/monthly', [VisitorPController::class, 'getMonthlyPhysicalVi
 Route::get('visitors/semester/{id_semester}', [VisitorVController::class, 'getVisitorsBySemester']);
 
 
+//Statistics
+Route::get('total-visitorsAdmitted', [VisitorInfoXApplicantController::class, 'getVisitorsAdmitted']);
+Route::get('total-visitorsAdmittedByDistrict', [VisitorInfoXApplicantController::class, 'CountApplicantsAdmittedByDistrictfromLima']);
+
 
 
 

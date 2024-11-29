@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('id_visitVDetail');
             $table->unsignedBigInteger('fk_id_visitorV');
             $table->unsignedBigInteger('fk_id_visitV');
-            $table->unsignedBigInteger('fk_id_builtArea');
+            $table->unsignedBigInteger('fk_id_builtArea')->nullable();
             $table->foreign('fk_id_builtArea')->references('id_builtArea')->on('built_areas');
             $table->string('kindOfEvent');
             $table->string('get');
