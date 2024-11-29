@@ -11,6 +11,7 @@ import AIPoweredInsights from "../components/analytics/AIPoweredInsights";
 import DashboardCard from "../components/DashboardCard";
 import TButton from "../components/core/TButton";
 import { EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
+import Preferences from "../components/analytics/Preferences.jsx";
 
 export default function Statistics() {
   const [loading, setLoading] = useState(true);
@@ -143,6 +144,7 @@ export default function Statistics() {
           <CustomerSegmentation />
         </div>
 
+        <Preferences />
         {/*<AIPoweredInsights /> Si quieres agregar esta parte cambia arriba mb-8 */}
       </main>
     </div>
