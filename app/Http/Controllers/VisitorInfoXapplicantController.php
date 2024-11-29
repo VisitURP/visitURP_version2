@@ -577,6 +577,84 @@ class VisitorInfoXApplicantController extends Controller
     return response()->json($regionCount);
 }
 
+public function CountApplicantsAdmittedByDistrictfromLima()
+{
+    // Obtener todas las regiones de Lima Metropolitana (donde cod_Ubigeo empieza con '1401')
+    $regions = Ubigeo::where('cod_Ubigeo', 'like', '1401%')->get(['cod_Ubigeo', 'UbigeoName']);
+
+    // Inicializar el conteo por región
+    $regionCount = [];
+    foreach ($regions as $region) {
+        $regionCount[$region->cod_Ubigeo] = [
+            'cod_Ubigeo' => $region->cod_Ubigeo,
+            'name' => $region->UbigeoName,
+            'count' => 0,        // Total de registros (aplicantes)
+            'applicants' => 0,   // Total de postulantes
+            'admitted' => 0      // Total de ingresados
+        ];
+    }
+
+    // Obtener todos los aplicantes válidos
+    $applicants = VisitorInfoXApplicant::whereNotNull('fk_id_visitor')
+        ->whereNotNull('fk_id_applicant')
+        ->get();
+
+    foreach ($applicants as $applicant) {
+        // Obtener información del aplicante basado en el tipo de visitante (V, P, B)
+        $visitor = null;
+        if ($applicant->visitor_type === 'V') {
+            $visitor = VisitorV::find($applicant->fk_id_visitor);
+        } elseif ($applicant->visitor_type === 'P') {
+            $visitor = VisitorP::find($applicant->fk_id_visitor);
+        } elseif ($applicant->visitor_type === 'B') {
+            $ids = explode('_', $applicant->fk_id_visitor);
+            $virtualId = $ids[0];
+            $physicalId = $ids[1];
+
+            $visitorV = VisitorV::find($virtualId);
+            $visitorP = VisitorP::find($physicalId);
+
+            // Contar ambas partes del visitante mixto
+            if ($visitorV && str_starts_with($visitorV->cod_Ubigeo, '1401')) {
+                $regionCount[$visitorV->cod_Ubigeo]['count']++;
+                $regionCount[$visitorV->cod_Ubigeo]['applicants']++;
+                if ($applicant->admitted) {
+                    $regionCount[$visitorV->cod_Ubigeo]['admitted']++;
+                }
+            }
+
+            if ($visitorP && str_starts_with($visitorP->cod_Ubigeo, '1401')) {
+                $regionCount[$visitorP->cod_Ubigeo]['count']++;
+                $regionCount[$visitorP->cod_Ubigeo]['applicants']++;
+                if ($applicant->admitted) {
+                    $regionCount[$visitorP->cod_Ubigeo]['admitted']++;
+                }
+            }
+            continue; // Saltar al siguiente aplicante
+        }
+
+        // Procesar aplicantes virtuales y presenciales
+        if ($visitor && str_starts_with($visitor->cod_Ubigeo, '1401')) {
+            $regionCount[$visitor->cod_Ubigeo]['count']++;
+            $regionCount[$visitor->cod_Ubigeo]['applicants']++;
+            if ($applicant->admitted) {
+                $regionCount[$visitor->cod_Ubigeo]['admitted']++;
+            }
+        }
+    }
+
+    // Convertir el array asociativo en uno indexado y ordenarlo por cod_Ubigeo
+    $sortedRegions = array_values($regionCount);
+    usort($sortedRegions, function ($a, $b) {
+        return $a['cod_Ubigeo'] <=> $b['cod_Ubigeo'];
+    });
+
+    return response()->json($sortedRegions);
+}
+
+
+
+
     public function getMostVisitedBuiltAreas()
     {
         // Obtener las áreas construidas más visitadas con sus nombres
