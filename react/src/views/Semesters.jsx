@@ -72,6 +72,19 @@ export default function Semesters() {
     }
   };
 
+  const validateDates = (start, end, prevEnd, nextStart) => {
+    if (new Date(start) >= new Date(end)) {
+      return "La fecha de inicio debe ser menor que la de terminación.";
+    }
+    if (prevEnd && new Date(start) <= new Date(prevEnd)) {
+      return "La fecha de inicio debe ser mayor a la terminación del semestre anterior.";
+    }
+    if (nextStart && new Date(end) >= new Date(nextStart)) {
+      return "La fecha de terminación debe ser menor a la de inicio del semestre siguiente.";
+    }
+    return null;
+  };
+
   const createSemesterObject = (name, from, to) => ({
     semesterName: name,
     semesterFrom: from,
@@ -79,8 +92,10 @@ export default function Semesters() {
     created_at: from,
   });
 
+  // Actualiza la función handleAddSemester
   const handleAddSemester = async () => {
     const semesterName = `${semesterYear}-${semesterSuffix}`;
+    const prevSemester = semesters[semesters.length - 1];
 
     // Validaciones iniciales
     if (!semesterFrom || !semesterTo) {
@@ -97,15 +112,18 @@ export default function Semesters() {
       return;
     }
 
-    const semesterFromFormatted = formatDate(semesterFrom);
-    const semesterToFormatted = formatDate(semesterTo);
-
-    // Validación de que el semestre no exista
-    await fetchSemesters(); // Asegurar que `semesters` está actualizado
-    if (semesters.some((s) => s.semesterName === semesterName)) {
-      setErrorMessage("El semestre ya existe.");
+    const error = validateDates(
+      semesterFrom,
+      semesterTo,
+      prevSemester?.semesterTo
+    );
+    if (error) {
+      setErrorMessage(error);
       return;
     }
+
+    const semesterFromFormatted = formatDate(semesterFrom);
+    const semesterToFormatted = semesterTo ? formatDate(semesterTo) : null;
 
     if (new Date(semesterFrom) >= new Date(semesterTo)) {
       setErrorMessage(
@@ -114,33 +132,36 @@ export default function Semesters() {
       return;
     }
 
+    if (
+      latestSemester &&
+      new Date(semesterFrom) <= new Date(latestSemester.semesterTo)
+    ) {
+      setErrorMessage(
+        "La Fecha de Inicio debe ser mayor a la Fecha de Terminación del último semestre."
+      );
+      return;
+    }
+
     // Crear nuevo semestre
     const newSemester = createSemesterObject(
-      semesterName,
+      `${semesterYear}-${semesterSuffix}`,
       semesterFromFormatted,
       semesterToFormatted
     );
 
     try {
-      // Registrar el semestre principal
-      await axios.post(`${API_BASE_URL}/register-semester`, newSemester);
-      await fetchSemesters(); // Actualizar la lista después de agregar
-
-      // Resetear estado del formulario
-      setSemesterTo("");
+      await axios.post(`${API_BASE_URL}/register-semester`, {
+        semesterName,
+        semesterFrom,
+        semesterTo,
+      });
+      fetchSemesters();
       setIsModalOpen(false);
+      setSemesterTo("");
       setErrorMessage("");
-
       setSuccessMessage("Semestre registrado con éxito.");
     } catch (error) {
-      console.error(
-        "Error al registrar el semestre:",
-        error.response?.data || error.message
-      );
-      setErrorMessage(
-        error.response?.data?.message ||
-          "Error al registrar el semestre. Intente de nuevo."
-      );
+      console.error("Error al registrar semestre:", error);
     }
   };
 
@@ -155,47 +176,48 @@ export default function Semesters() {
   };
 
   const autoSetNextSemester = (semestersData) => {
-    const today = new Date(); // Fecha actual como objeto Date
-
     if (semestersData.length > 0) {
-      // Tomar el último semestre registrado
       const latest = semestersData[semestersData.length - 1];
       const [year, suffix] = latest.semesterName.split("-").map(Number);
-
-      const semesterEnd = new Date(latest.semesterTo);
 
       const nextYear = suffix === 2 ? year + 1 : year;
       const nextSuffix = suffix === 1 ? 2 : 1;
 
-      if (semesterEnd < today) {
-        // Si el último semestre ya terminó
-        setSemesterYear(nextYear);
-        setSemesterSuffix(nextSuffix);
-      } else {
-        // Si el último semestre aún está vigente
-        setSemesterYear(year);
-        setSemesterSuffix(suffix);
-      }
-    } else {
-      // Calcular el semestre según los meses si no hay datos en la tabla
-      const today = new Date();
-      const currentYear = today.getFullYear();
-      const currentMonth = today.getMonth() + 1; // Mes actual (1-12)
+      setSemesterYear(nextYear);
+      setSemesterSuffix(nextSuffix);
 
-      if (currentMonth > 8) {
-        // Después de agosto (semestre 1 del próximo año)
-        setSemesterYear(currentYear + 1);
-        setSemesterSuffix(1);
-      } else if (currentMonth > 3) {
-        // Entre abril y agosto (semestre 2 del año actual)
-        setSemesterYear(currentYear);
-        setSemesterSuffix(2);
-      } else {
-        // Antes de abril (semestre 1 del año actual)
-        setSemesterYear(currentYear);
-        setSemesterSuffix(1);
-      }
+      // Ajustar fechas automáticas
+      const nextFromDate = new Date(latest.semesterTo);
+      nextFromDate.setDate(nextFromDate.getDate() + 1); // Día siguiente al fin del último semestre
+
+      const nextToDate = new Date(nextFromDate);
+      nextToDate.setMonth(nextToDate.getMonth() + 6); // Semestre de 6 meses
+
+      setSemesterFrom(nextFromDate.toISOString().split("T")[0]);
+      setSemesterTo(nextToDate.toISOString().split("T")[0]);
+    } else {
+      // Lógica para el primer semestre si no hay datos
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth() + 1;
+
+      setSemesterYear(month > 8 ? year + 1 : year);
+      setSemesterSuffix(month > 3 && month <= 8 ? 2 : 1);
+
+      const semesterFromDate = new Date();
+      const semesterToDate = new Date(semesterFromDate);
+      semesterToDate.setMonth(semesterToDate.getMonth() + 6);
+
+      setSemesterFrom(semesterFromDate.toISOString().split("T")[0]);
+      setSemesterTo(semesterToDate.toISOString().split("T")[0]);
     }
+  };
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+    setSemesterFrom(new Date().toISOString().split("T")[0]); // Fecha actual
+    setSemesterTo(""); // Fecha de terminación vacía
+    setErrorMessage(""); // Reiniciar mensaje de error
   };
 
   const handleCloseModal = () => {
@@ -205,43 +227,100 @@ export default function Semesters() {
     setSemesterFrom(new Date().toISOString().split("T")[0]);
   };
 
+  // Actualiza la función handleUpdateSemester para mantener la lógica de validación
   const handleUpdateSemester = async () => {
+    // Ordenar los semestres por fecha de creación o por nombre de semestre
+    const sortedSemesters = [...semesters].sort((a, b) => {
+      // Comparar primero por fecha de creación, si son iguales, por nombre de semestre
+      const dateComparison =
+        new Date(a.creationDate) - new Date(b.creationDate);
+      return dateComparison !== 0
+        ? dateComparison
+        : a.semesterName.localeCompare(b.semesterName);
+    });
+
+    // Encontrar el índice del semestre que se está editando
+    const currentIndex = sortedSemesters.findIndex(
+      (s) => s.semesterName === semesterToEdit.semesterName
+    );
+
+    if (currentIndex === -1) {
+      console.error("El semestre a editar no se encuentra en la lista.");
+      setErrorMessage("El semestre que intenta editar no existe.");
+      return;
+    }
+
+    // Determinar los semestres anterior y posterior
+    const prevSemester =
+      currentIndex > 0 ? sortedSemesters[currentIndex - 1] : null;
+    const nextSemester =
+      currentIndex < sortedSemesters.length - 1
+        ? sortedSemesters[currentIndex + 1]
+        : null;
+
+    console.log("Semestre anterior:", prevSemester);
+    console.log("Semestre actual:", sortedSemesters[currentIndex]);
+    console.log("Semestre siguiente:", nextSemester);
+
+    // Validar fechas ingresadas
+    if (
+      isNaN(new Date(semesterToEdit.semesterFrom)) ||
+      isNaN(new Date(semesterToEdit.semesterTo))
+    ) {
+      setErrorMessage("Las fechas ingresadas no son válidas.");
+      return;
+    }
+
+    // Validar que la Fecha de Inicio sea menor que la Fecha de Terminación
+    if (
+      new Date(semesterToEdit.semesterFrom) >=
+      new Date(semesterToEdit.semesterTo)
+    ) {
+      setErrorMessage(
+        "La Fecha de Inicio debe ser menor que la Fecha de Terminación."
+      );
+      return;
+    }
+
+    // Validar con el semestre anterior (si existe)
+    if (
+      prevSemester &&
+      new Date(semesterToEdit.semesterFrom) <= new Date(prevSemester.semesterTo)
+    ) {
+      setErrorMessage(
+        `La Fecha de Inicio debe ser mayor a la Fecha de Terminación del semestre anterior (${prevSemester.semesterName}).`
+      );
+      return;
+    }
+
+    // Validar con el semestre posterior (si existe)
+    if (
+      nextSemester &&
+      new Date(semesterToEdit.semesterTo) >= new Date(nextSemester.semesterFrom)
+    ) {
+      setErrorMessage(
+        `La Fecha de Terminación debe ser menor a la Fecha de Inicio del semestre posterior (${nextSemester.semesterName}).`
+      );
+      return;
+    }
+
     try {
-      const updated_at = formatDate(new Date());
-      const { semesterName, semesterFrom, semesterTo } = semesterToEdit;
-
-      // Validación de fechas
-      if (new Date(semesterFrom) >= new Date(semesterTo)) {
-        console.error(
-          "La Fecha de Inicio debe ser menor que la Fecha de Terminación."
-        );
-        return;
-      }
-
-      const semesterFromFormatted = formatDate(semesterFrom);
-      const semesterToFormatted = formatDate(semesterTo);
-
-      // Actualizar semestre
-      await axios.put(`${API_BASE_URL}/update-semester/${semesterName}`, {
-        semesterName,
-        semesterFrom: semesterFromFormatted,
-        semesterTo: semesterToFormatted,
-        updated_at,
-      });
+      // Realizar la actualización en el servidor
+      await axios.put(
+        `${API_BASE_URL}/update-semester/${semesterToEdit.semesterName}`,
+        semesterToEdit
+      );
 
       // Refrescar la lista de semestres
       fetchSemesters();
       setIsEditModalOpen(false);
-
-      setSuccessMessage("Semestre editado con éxito.");
+      setErrorMessage("");
+      setSuccessMessage("Semestre actualizado con éxito.");
     } catch (error) {
-      console.error(
-        "Error al actualizar el semestre:",
-        error.response?.data || error.message
-      );
+      console.error("Error al actualizar semestre:", error);
+      setErrorMessage("Ocurrió un error al actualizar el semestre.");
     }
   };
-
 
   const handleConfirmDelete = async () => {
     try {
@@ -266,21 +345,20 @@ export default function Semesters() {
   const today = new Date().toISOString().split("T")[0];
 
   const isRegisterButtonDisabled = () => {
-    // Si no hay semestres registrados, el botón estará habilitado
-    if (!latestSemester) return false;
-
-    // Si hay semestres registrados, valida la fecha de finalización del último semestre
-    const latestSemesterEndDate = new Date(latestSemester.semesterTo);
-    return new Date() < latestSemesterEndDate;
+    false;
   };
 
   function formatDateForInput(date) {
-    const localDate = new Date(date); // Convierte la fecha en un objeto Date
-    const year = localDate.getFullYear();
-    const month = String(localDate.getMonth() + 1).padStart(2, "0"); // Ajusta el mes (0-11 -> 1-12)
-    const day = String(localDate.getDate()).padStart(2, "0");
+    // Convertir a un objeto Date y asegurarse de manejar zonas horarias
+    const adjustedDate = new Date(date);
+    console.log("Fecha original:", date);
+    console.log("Fecha ajustada:", adjustedDate);
 
-    return `${year}-${month}-${day}`; // Retorna el formato YYYY-MM-DD
+    const year = adjustedDate.getUTCFullYear(); // Usar UTC para evitar desajustes
+    const month = String(adjustedDate.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(adjustedDate.getUTCDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
   }
 
   useEffect(() => {
@@ -318,13 +396,8 @@ export default function Semesters() {
           ))}
         </select>
         <button
-          className={`${
-            isRegisterButtonDisabled()
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-green-500 hover:bg-green-600"
-          } text-white font-semibold px-8 py-3 rounded-lg`}
-          onClick={() => setIsModalOpen(true)}
-          disabled={isRegisterButtonDisabled()}
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-3 rounded-lg"
+          onClick={() => handleOpenModal()}
         >
           <FaPlus className="inline mr-2" />
           Registrar Semestre
@@ -378,7 +451,6 @@ export default function Semesters() {
             <input
               type="date"
               value={semesterTo}
-              min={today}
               onChange={(e) => setSemesterTo(e.target.value)}
               className="block w-full px-4 py-2 border rounded-lg mb-6"
             />
@@ -405,6 +477,9 @@ export default function Semesters() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
           <div className="bg-white p-8 rounded-lg w-full max-w-md shadow-lg">
             <h2 className="text-2xl font-bold mb-4">Editar Semestre</h2>
+            {errorMessage && (
+              <p className="text-red-500 text-center mb-4">{errorMessage}</p>
+            )}
             <label className="block text-gray-700 font-semibold mb-2">
               Nombre del Semestre:
             </label>
@@ -547,26 +622,20 @@ export default function Semesters() {
                   </td>
                   <td className="flex items-center justify-center space-x-4 py-4">
                     <button
-                      className={`text-blue-500 hover:text-blue-700 ${
-                        !isLast && "opacity-50 pointer-events-none"
-                      }`}
+                      className="text-blue-500 hover:text-blue-700"
                       onClick={() => {
                         setSemesterToEdit(semester);
                         setIsEditModalOpen(true);
                       }}
-                      disabled={!isLast}
                     >
                       <FaEdit />
                     </button>
                     <button
-                      className={`text-red-500 hover:text-red-700 ${
-                        !isLast && "opacity-50 pointer-events-none"
-                      }`}
+                      className="text-red-500 hover:text-red-700"
                       onClick={() => {
                         setSemesterToDelete(semester);
                         setIsDeleteModalOpen(true);
                       }}
-                      disabled={!isLast}
                     >
                       <FaTrashAlt />
                     </button>
