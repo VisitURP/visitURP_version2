@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\VisitorInfoXApplicant;
 use App\Models\VisitorV;
 use App\Models\visitorP;
+use App\Models\visitV;
 use App\Models\Semester;
 use App\Models\VisitVDetail;
 use App\Models\BuiltArea;
@@ -63,6 +64,66 @@ class VisitorInfoXApplicantController extends Controller
         'postulantes que fueron visitantes count' => $visitorAndApplicantCount,
         'admittedCounts' => $admittedCounts,
     ]);
+    }
+
+    public function filterVisitsByVisitorV($fk_id_visitor)
+    {
+        // Buscar las visitas asociadas al visitante
+        $visits = visitV::where('fk_id_visitor', $fk_id_visitor)->where('visitor_type', 'V')->get();
+
+        // Si no hay visitas, retornar un mensaje
+        if ($visits->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No visits found for the given visitor ID.',
+            ], 404);
+        }
+
+        // Retornar las visitas encontradas
+        return response()->json([
+            'success' => true,
+            'data' => $visits,
+        ]);
+    }
+
+    public function filterVisitDetailsByVisit($fk_id_visitV)
+    {
+        // Buscar las visitas asociadas al visitante
+        $visitsDetails = VisitVDetail::where('fk_id_visitV', $fk_id_visitV)->where('kindOfEvent','V')->get();
+
+        // Si no hay visitas, retornar un mensaje
+        if ($visitsDetails->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No visits found for the given visitor ID.',
+            ], 404);
+        }
+
+        // Retornar las visitas encontradas
+        return response()->json([
+            'success' => true,
+            'data' => $visitsDetails,
+        ]);
+    }
+
+    public function filterVisitsByVisitorP($fk_id_visitor)
+    {
+        // Buscar las visitas asociadas al visitante
+        $visits = visitV::where('fk_id_visitor', $fk_id_visitor)->where('visitor_type', 'P')->get();
+
+        // Si no hay visitas, retornar un mensaje
+        if ($visits->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No visits found for the given visitor ID.',
+            ], 404);
+        }
+
+        // Retornar las visitas encontradas
+        return response()->json([
+            'success' => true,
+            'data' => $visits,
+        ]);
     }
 
     public function getVirtualVisitorsfromVisitorInfo()

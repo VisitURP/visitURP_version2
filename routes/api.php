@@ -14,6 +14,7 @@ use App\Http\Controllers\ChatbotQAController;
 use App\Http\Controllers\ChatBot_InquiryController;
 use App\Http\Controllers\ApplicantController;
 use App\Http\Controllers\VisitorInfoXApplicantController;
+use App\Http\Controllers\VisitGroupController;
 use App\Http\Controllers\AcademicInterestController;
 use App\Http\Controllers\BuiltAreaController;
 use App\Http\Controllers\UserVController;
@@ -77,6 +78,17 @@ Route::get('find-visitorP/{id}', [VisitorPController::class, 'show']);
 Route::put('update-visitorP/{id}', [VisitorPController::class, 'update']);
 
 Route::delete('delete-visitorP/{id}',[VisitorPController::class, 'destroy']);
+
+//visitGroup
+Route::get('getvisit-groups', [VisitGroupController::class, 'index']);
+
+Route::get('visit-group/{id}', [VisitGroupController::class, 'show']);
+
+Route::post('visit-groups', [VisitGroupController::class, 'store']);
+
+Route::put('update-visitgroups/{id}', [VisitGroupController::class, 'update']);
+
+Route::delete('delete-visitgroup/{id}', [VisitGroupController::class, 'destroy']);
 
 //visitorV
 Route::get('list-visitorVs', [VisitorVController::class, 'index']);
@@ -337,6 +349,10 @@ Route::get('visitors/semester/{id_semester}', [VisitorVController::class, 'getVi
 //Statistics
 Route::get('total-visitorsAdmitted', [VisitorInfoXApplicantController::class, 'getVisitorsAdmitted']);
 Route::get('total-visitorsAdmittedByDistrict', [VisitorInfoXApplicantController::class, 'CountApplicantsAdmittedByDistrictfromLima']);
+
+Route::get('total-visitsByvisitorP/{id_visitor}', [VisitorInfoXApplicantController::class, 'filterVisitsByVisitorP']);
+Route::get('total-visitsByvisitorV/{id_visitor}', [VisitorInfoXApplicantController::class, 'filterVisitsByVisitorV']);
+Route::get('filter-visitDetailsByVisit/{id_visit}', [VisitorInfoXApplicantController::class, 'filterVisitDetailsByVisit']);
 
 
 

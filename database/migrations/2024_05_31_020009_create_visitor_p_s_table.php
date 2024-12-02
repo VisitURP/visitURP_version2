@@ -23,10 +23,13 @@ return new class extends Migration
             $table->string('educationalInstitution', 500)->nullable();
             $table->dateTime('birthDate')->nullable();
             $table->enum('gender', ['F', 'M', 'I'])->nullable();
+            $table->unsignedBigInteger('fk_id_visitGroup')->nullable();
+            $table->dateTime('chosenDate')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('fk_docType_id')->references('id_docType')->on('doc_types');
+            $table->foreign('fk_id_visitGroup')->references('id_visitGroup')->on('visit_groups')->onDelete('cascade');
 
         });
     }

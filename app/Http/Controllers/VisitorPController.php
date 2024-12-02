@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\visitorP;
 use App\Models\visitV;
+use App\Models\VisitGroup;
 use App\Models\Semester;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -44,29 +45,87 @@ class VisitorPController extends Controller
             'cod_Ubigeo' => ['max:500'],
             'educationalInstitution' => ['required','max:500'],
             'birthDate' => ['nullable','date_format:d/m/Y'],
-            'gender' => 'nullable','in:' . implode(',', [visitorP::TYPE1, visitorP::TYPE2, visitorP::TYPE3])
+            'gender' => 'nullable','in:' . implode(',', [visitorP::TYPE1, visitorP::TYPE2, visitorP::TYPE3]),
+            'fk_id_visitGroup' => ['nullable', 'exists:visit_groups,id_visitGroup'],
+            'chosenDate' => ['nullable', 'date_format:d/m/Y'],
         ]);
 
+        // Validación adicional
+        if (empty($validatedData['fk_id_visitGroup']) && empty($validatedData['chosenDate'])) {
+            return response()->json(['error' => 'Debe proporcionar un grupo de visita o una fecha elegida.'], 422);
+        }
         
-        $visitorP = visitorP::create($validatedData);
+        // Verifica si el visitante ya existe (basado en el email o documento)
+        $existingVisitor = VisitorP::where('email', $request->input('email'))
+        ->orWhere('docNumber', $request->input('docNumber'))
+        ->first();
 
-        $visitV = visitV::create([
-            'fk_id_visitor' => $visitorP->id_visitorP,
+        if ($existingVisitor) {
+        // Si el visitante ya existe, actualiza sus datos
+        $existingVisitor->update(array_filter($validatedData));
+
+            // Crear nueva visita relacionada para el visitante actualizado
+            $visitP = visitV::create([
+            'fk_id_visitor' => $existingVisitor->id_visitorP,
             'visitor_type' => 'P',
-            'fk_id_semester' => $this->assignSemester($visitorP->created_at),
+            'fk_id_semester' => $this->assignSemester($this->determineVisitDate($validatedData)),
+            ]);
+
+        // Retorna los datos del visitante existente y su nueva visita
+            return response()->json([
+            'isNewVisitor' => false,
+            'visitorP' => $existingVisitor,
+            'visitP' => $visitP,
+            ]);
+        } else {
+        // Si el visitante no existe, crea uno nuevo
+        $visitorP = VisitorP::create($validatedData);
+
+        // Crear nueva visita relacionada para el visitante recién creado
+        $visitP = VisitP::create([
+        'fk_id_visitor' => $visitorP->id_visitorP,
+        'visitor_type' => 'P',
+        'fk_id_semester' => $this->assignSemester($this->determineVisitDate($validatedData)),
         ]);
 
-        // Retorna los datos del visitante existente para que Unity los muestre en el modal
+        // Retorna los datos del nuevo visitante y su visita
         return response()->json([
-            'visitorP' => $visitorP,
-            'visitV' => $visitV, 
-        ]);       
+        'isNewVisitor' => true,
+        'visitorP' => $visitorP,
+        'visitP' => $visitP,
+        ], 201);
+        }
+    }
+
+    // Método para determinar la fecha de la visita
+    private function determineVisitDate(array $validatedData)
+    {
+        if (!empty($validatedData['fk_id_visitGroup'])) {
+            // Si tiene un grupo de visita, usamos la fecha del grupo
+            $visitGroup = VisitGroup::findOrFail($validatedData['fk_id_visitGroup']);
+            // Asegúrate de que la fecha esté en formato Y-m-d
+            return Carbon::parse($visitGroup->dayOfVisit)->format('Y-m-d');
+        }
+
+        // Si no tiene un grupo de visita, usamos la fecha elegida por el visitante
+        if (!empty($validatedData['chosenDate'])) {
+            // Asegúrate de que la fecha esté en formato Y-m-d
+            return Carbon::parse($validatedData['chosenDate'])->format('Y-m-d');
+        }
+
+        return null; // Si no hay fecha, retornamos null
     }
 
     public function assignSemester($createdAt)
     {
-        // Convierte la fecha a un objeto Carbon
-        $createdAt = Carbon::parse($createdAt);
+        // Asegúrate de que la fecha esté en el formato correcto
+        try {
+            // Si la fecha ya está en formato Y-m-d, no es necesario hacer la conversión
+            $createdAt = Carbon::parse($createdAt)->format('Y-m-d');
+        } catch (\Exception $e) {
+            Log::error("Error al parsear la fecha: {$createdAt}. Mensaje de error: " . $e->getMessage());
+            return null; // Si ocurre un error, retorna null
+        }
 
         Log::info("Asignando semestre para la fecha: {$createdAt}");
 
@@ -80,11 +139,9 @@ class VisitorPController extends Controller
             return $semester->semesterName; // Devuelve el nombre del semestre
         } else {
             Log::warning("No se encontró un semestre para la fecha: {$createdAt}");
-            return null; // Retorna null si no encuentra un semestre
+            return null; 
         }
     }
-
-
 
     /**
      * Display the specified resource.
@@ -111,6 +168,7 @@ class VisitorPController extends Controller
      */
     public function update(Request $request, int $visitorP)
     {
+        // Validación
         $request->validate([
             'name' => ['nullable', 'max:500'],
             'lastName' => ['nullable', 'max:500'],
@@ -121,49 +179,62 @@ class VisitorPController extends Controller
             'cod_Ubigeo' => ['nullable'],
             'educationalInstitution' => ['nullable','max:500'],
             'birthDate' => ['nullable','date_format:d/m/Y'],
-            'gender' => 'nullable','in:' . implode(',', [visitorP::TYPE1, visitorP::TYPE2, visitorP::TYPE3])
-       
+            'gender' => 'nullable','in:' . implode(',', [visitorP::TYPE1, visitorP::TYPE2, visitorP::TYPE3]),
+            'fk_id_visitGroup' => ['nullable', 'exists:visit_groups,id_visitGroup'],
+            'chosenDate' => ['nullable', 'date_format:d/m/Y'], 
         ]);
 
+        // Buscar al visitante
         $visitorP = visitorP::findOrFail($visitorP);
-         // filled Solo actualiza los campos si no son null
-    if ($request->filled('name')) {
-        $visitorP->name = $request->input('name');
-    }
-    if ($request->filled('email')) {
-        $visitorP->email = $request->input('email');
-    }
-    if ($request->filled('lastName')) {
-        $visitorP->lastName = $request->input('lastName');
-    }
-    if ($request->filled('fk_docType_id')) {
-        $visitorP->fk_docType_id = $request->input('fk_docType_id');
-    }
-    if ($request->filled('docNumber')) {
-        $visitorP->docNumber = $request->input('docNumber');
-    }
-    if ($request->filled('phone')) {
-        $visitorP->phone = $request->input('phone');
-    }
-    if ($request->filled('cod_Ubigeo')) {
-        $visitorP->cod_Ubigeo = $request->input('cod_Ubigeo');
-    }
-    if ($request->filled('educationalInstitution')) {
-        $visitorP->educationalInstitution = $request->input('educationalInstitution');
-    }
-    if ($request->filled('birthDate')) {
-        $visitorP->birthDate = $request->input('birthDate');
-    }
-    if ($request->filled('gender')) {
-        $visitorP->gender = $request->input('gender');
-    }
 
-    // Guarda los cambios
-    $visitorP->save();
+        // Actualizar los campos solo si están presentes
+        if ($request->filled('name')) {
+            $visitorP->name = $request->input('name');
+        }
+        if ($request->filled('email')) {
+            $visitorP->email = $request->input('email');
+        }
+        if ($request->filled('lastName')) {
+            $visitorP->lastName = $request->input('lastName');
+        }
+        if ($request->filled('fk_docType_id')) {
+            $visitorP->fk_docType_id = $request->input('fk_docType_id');
+        }
+        if ($request->filled('docNumber')) {
+            $visitorP->docNumber = $request->input('docNumber');
+        }
+        if ($request->filled('phone')) {
+            $visitorP->phone = $request->input('phone');
+        }
+        if ($request->filled('cod_Ubigeo')) {
+            $visitorP->cod_Ubigeo = $request->input('cod_Ubigeo');
+        }
+        if ($request->filled('educationalInstitution')) {
+            $visitorP->educationalInstitution = $request->input('educationalInstitution');
+        }
+        if ($request->filled('birthDate')) {
+            $visitorP->birthDate = $request->input('birthDate');
+        }
+        if ($request->filled('gender')) {
+            $visitorP->gender = $request->input('gender');
+        }
+
+        // Si el campo 'chosenDate' está presente, actualizarlo
+        if ($request->filled('chosenDate')) {
+            $visitorP->chosenDate = Carbon::createFromFormat('d/m/Y', $request->input('chosenDate'))->format('Y-m-d');
+        }
+
+        // Si el campo 'fk_id_visitGroup' está presente, actualizarlo
+        if ($request->filled('fk_id_visitGroup')) {
+            $visitorP->fk_id_visitGroup = $request->input('fk_id_visitGroup');
+        }
+
+        // Guardar los cambios
+        $visitorP->save();
 
         return response()->json([
-            'Message' => 'Data already updated.',
-            'Physical Visitor: ' => $visitorP
+            'Message' => 'Data successfully updated.',
+            'Physical Visitor' => $visitorP
         ]);
     }
 
