@@ -6,10 +6,12 @@ use App\Models\VisitorInfoXApplicant;
 use App\Models\VisitorV;
 use App\Models\visitorP;
 use App\Models\visitV;
+use App\Models\VisitGroup;
 use App\Models\Semester;
 use App\Models\VisitVDetail;
 use App\Models\BuiltArea;
 use App\Models\Ubigeo;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +22,33 @@ class VisitorInfoXApplicantController extends Controller
     /**
      * Display a listing of the resource.
      */
+    public function getVisitsforToday()
+    {
+        // Definir la fecha actual
+        $today = Carbon::today()->toDateString();
+
+        // Crear la consulta de la visita con Eager Loading para la relación builtArea
+        $visits = VisitGroup::with('builtAreas') // Cargar la relación builtArea
+            ->where('dayOfVisit', $today)
+            ->get();
+
+        // Formatear la respuesta para que solo contenga los campos requeridos
+        $formattedVisits = $visits->map(function ($visit) {
+            return [
+                'nameGroup' => $visit->nameGroup,
+                'guide' => $visit->guide,
+                'quantity' => $visit->quantity,                
+                'Places To visit' => $visit->builtAreas->map(function ($builtArea) {
+                    return [
+                        'builtAreaName' => $builtArea->builtAreaName,
+                    ];
+                }),
+            ];
+        });
+
+        // Retornar los resultados como JSON
+        return response()->json($formattedVisits);
+    }
 
      public function getTotalVisitors() {
         // Contar visitantes virtuales

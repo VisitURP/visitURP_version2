@@ -334,6 +334,9 @@ Route::get('inquiries-Answered', [ChatBot_InquiryController::class, 'countInquir
 
 Route::get('getVisitorBySemester/{semesterName}', [VisitorInfoXApplicantController::class, 'getVisitorsBySemester']);
 
+Route::get('visitsforToday', [VisitorInfoXApplicantController::class, 'getVisitsforToday']);
+
+
 
 //visitAll_v2
 Route::get('getPreferencesByVisitorId/{id}', [VisitorPreferenceController::class, 'getPreferencesByVisitorId']);
