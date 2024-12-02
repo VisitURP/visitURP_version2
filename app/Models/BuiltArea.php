@@ -22,6 +22,17 @@ class BuiltArea extends Model
     {
         return $this->hasMany(VisitVDetail::class, 'fk_id_builtArea','id_builtArea');
     }
+
+    public function visitGroups()
+    {
+        return $this->belongsToMany(
+            VisitGroup::class,           // Modelo relacionado
+            'built_area_visit_group',    // Tabla pivot
+            'fk_id_builtArea',           // Llave foránea de `BuiltArea` en la tabla pivot
+            'fk_id_visitgroup'           // Llave foránea de `VisitGroup` en la tabla pivot
+        );
+    }
+
 }
 
 
