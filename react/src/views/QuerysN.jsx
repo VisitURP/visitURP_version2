@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaEdit, FaTrashAlt, FaInfoCircle, FaSearch } from "react-icons/fa";
+import emailjs from "emailjs-com";
 
 export default function QuerysN() {
   const [inquiries, setInquiries] = useState([]);
@@ -13,6 +14,7 @@ export default function QuerysN() {
   const [inquiryToDelete, setInquiryToDelete] = useState(null);
   const [responseText, setResponseText] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     fetchInquiriesAndVisitors();
@@ -28,13 +30,18 @@ export default function QuerysN() {
 
       // Obtener los nombres de los visitantes usando Promise.all
       const namesPromises = inquiriesData.map(async (inquiry) => {
-        const visitorResponse = await axios.get(
-          `http://localhost/visitURP_version2/public/index.php/api/find-visitorV/${inquiry.fk_visitorV_id}`
-        );
-        return {
-          id: inquiry.fk_visitorV_id,
-          name: visitorResponse.data.name || "Desconocido",
-        };
+        try {
+          const visitorResponse = await axios.get(
+            `http://localhost/visitURP_version2/public/index.php/api/find-visitorV/${inquiry.fk_visitorV_id}`
+          );
+          const visitorData = visitorResponse.data;
+          return {
+            id: inquiry.fk_visitorV_id,
+            name: visitorData.name || "Desconocido",
+          };
+        } catch {
+          return { id: inquiry.fk_visitorV_id, name: "Desconocido" };
+        }
       });
 
       // Esperar a que todas las solicitudes terminen
@@ -85,75 +92,86 @@ export default function QuerysN() {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmReply = async () => {
-    if (!responseText.trim()) {
-      setErrorMessage("Por favor ingrese una respuesta.");
-      return;
-    }
+const confirmReply = async () => {
+  if (!responseText.trim()) {
+    setErrorMessage("Por favor ingrese una respuesta.");
+    return;
+  }
 
-    try {
-      // Responder la consulta y actualizar su estado en la base de datos
-      await axios.post(
-        `http://localhost/visitURP_version2/public/index.php/api/reply-inquiry/${inquiryToReply.id_inquiry}`,
-        { response: responseText }
-      );
+  try {
+    // Mantener los detalles originales de la consulta, solo actualizar el estado y la fecha de actualización
+    const updatedInquiry = {
+      ...inquiryToReply, // Mantiene todos los datos originales
+      state: "Answered", // Cambiar el estado a 'Answered'
+      updated_at: new Date().toISOString(), // Actualiza la fecha con la fecha actual
+      response: responseText, // Agregar la respuesta proporcionada
+    };
 
-      // Obtener el correo del visitante usando su ID
-      const visitorResponse = await axios.get(
-        `http://localhost/visitURP_version2/public/index.php/api/find-visitorV/${inquiryToReply.fk_visitorV_id}`
-      );
+    // Enviar solicitud PUT para actualizar la consulta en el backend
+    const response = await axios.put(
+      `http://localhost/visitURP_version2/public/index.php/api/update-inquiry/${inquiryToReply.id_inquiry}`,
+      updatedInquiry
+    );
 
-      const { email: visitorEmail, name: visitorName } = visitorResponse.data;
-
-      // Enviar el correo si el visitante tiene un correo registrado
-      if (visitorEmail) {
-        await axios.post(
-          "http://localhost/visitURP_version2/public/index.php/api/send-email",
-          {
-            email: visitorEmail,
-            subject: "Respuesta a tu consulta en VisitURP",
-            message: `Hola, ${
-              visitorName || "Visitante"
-            }.\n\nHemos respondido tu consulta:\n\n"${
-              inquiryToReply.detail
-            }"\n\nRespuesta: ${responseText}\n\nGracias por utilizar nuestro servicio.`,
-          }
-        );
-      }
-
-      // Actualizar el estado de la consulta en el frontend
+    if (response.status === 200) {
+      // Actualizar el estado de la consulta en el frontend solo si la respuesta fue exitosa
       setInquiries(
         inquiries.map((inquiry) =>
           inquiry.id_inquiry === inquiryToReply.id_inquiry
-            ? { ...inquiry, state: "Answered" }
+            ? {
+                ...inquiry,
+                state: "Answered",
+                updated_at: updatedInquiry.updated_at,
+                response: responseText,
+              }
             : inquiry
         )
       );
+
+      setSuccessMessage("La consulta fue respondida exitosamente.");
+      setTimeout(() => setSuccessMessage(""), 3000); // Ocultar mensaje después de 3 segundos
 
       // Limpiar el modal y los campos
       setResponseText("");
       setIsReplyModalOpen(false);
       setErrorMessage("");
-    } catch (error) {
-      console.error(
-        "Error al responder la consulta o enviar el correo:",
-        error
-      );
-      setErrorMessage("Hubo un error al procesar la respuesta.");
+    } else {
+      setErrorMessage("Hubo un error al actualizar el estado de la consulta.");
     }
-  };
+  } catch (error) {
+    console.error("Error al responder la consulta:", error);
+    setErrorMessage("Hubo un error al procesar la respuesta.");
+  }
+};
 
   const confirmDelete = async () => {
     try {
-      await axios.put(
+      // Usar DELETE en lugar de PUT para eliminar la consulta
+      await axios.delete(
         `http://localhost/visitURP_version2/public/index.php/api/delete-inquiry/${inquiryToDelete}`
       );
-      setInquiries(
-        inquiries.filter((inquiry) => inquiry.id_inquiry !== inquiryToDelete)
+
+      // Eliminar la consulta de las listas de 'inquiries' y 'filteredInquiries'
+      setInquiries((prevInquiries) =>
+        prevInquiries.filter(
+          (inquiry) => inquiry.id_inquiry !== inquiryToDelete
+        )
       );
+      setFilteredInquiries((prevFilteredInquiries) =>
+        prevFilteredInquiries.filter(
+          (inquiry) => inquiry.id_inquiry !== inquiryToDelete
+        )
+      );
+
+      // Mostrar mensaje de éxito
+      setSuccessMessage("Consulta eliminada exitosamente.");
+      setTimeout(() => setSuccessMessage(""), 3000); // Ocultar mensaje después de 3 segundos
+
+      // Cerrar el modal de eliminación
       setIsDeleteModalOpen(false);
     } catch (error) {
       console.error("Error al eliminar la consulta:", error);
+      setErrorMessage("Hubo un error al eliminar la consulta.");
     }
   };
 
@@ -192,8 +210,8 @@ export default function QuerysN() {
         <thead>
           <tr className="bg-gray-200 text-gray-600 uppercase text-sm">
             <th className="py-3 px-6 text-center">ID</th>
-            <th className="py-3 px-6 text-center">Visitante</th>
-            <th className="py-3 px-6 text-center">Detalles</th>
+            <th className="py-3 px-6 text-center">Nombre del Visitante</th>
+            <th className="py-3 px-6 text-center">Detalle</th>
             <th className="py-3 px-6 text-center">Estado</th>
             <th className="py-3 px-6 text-center">Acciones</th>
           </tr>
@@ -205,9 +223,7 @@ export default function QuerysN() {
               className="text-center bg-white border-b"
             >
               <td className="py-4">{inquiry.id_inquiry}</td>
-              <td className="py-4">
-                {visitorNames[inquiry.fk_id_visitorV] || inquiry.id_inquiry}
-              </td>
+              <td className="py-4">{visitorNames[inquiry.fk_visitorV_id]}</td>
               <td className="py-4">{inquiry.detail}</td>
               <td className="py-4">
                 <span
@@ -306,6 +322,12 @@ export default function QuerysN() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="bg-green-100 text-green-700 p-4 rounded-lg mb-4">
+          {successMessage}
         </div>
       )}
     </div>

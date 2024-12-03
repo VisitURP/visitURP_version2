@@ -57,7 +57,7 @@ export default function Visitors() {
   const fetchVisitors = async () => {
     try {
       const response = await axios.get(
-        "http://localhost/visitURP_version2/public/index.php/api/list-visitorPs"
+        "http://localhost/visitURP_version2/public/index.php/api/details-visitorsP"
       );
       setVisitors(response.data);
     } catch (error) {

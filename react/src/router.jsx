@@ -17,6 +17,7 @@ import EditVisit from "./views/EditVisit";
 import Statistics from "./views/Statistics";
 import Advertising from "./views/Advertising";
 import Feedbacks from "./views/Feedbacks";
+import VisitGroup from "./views/VisitGroup";
 
 const router = createBrowserRouter([
   {
@@ -82,6 +83,10 @@ const router = createBrowserRouter([
       {
         path: "/feedbacks",
         element: <Feedbacks />,
+      },
+      {
+        path: "/visitgroup",
+        element: <VisitGroup />
       },
     ],
   },

@@ -16,6 +16,7 @@ const QuerysCards = () => {
 
   const [builtAreaData, setBuiltAreaData] = useState([]);
   const [selectedVisitors, setSelectedVisitors] = useState([]);
+  const [visitsForToday, setVisitsForToday] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -62,9 +63,23 @@ const QuerysCards = () => {
       }
     };
 
+    const fetchVisitsForToday = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost/visitURP_version2/public/index.php/api/visitsforToday"
+        );
+        setVisitsForToday(response.data);
+      } catch (error) {
+        console.error("Error al obtener las visitas por realizar:", error);
+      }
+    };
+
     fetchData();
     fetchBuiltAreaData();
+    fetchVisitsForToday();
   }, []);
+
+  
 
   const handleCardClick = (visitors) => {
     setSelectedVisitors(visitors);
@@ -221,6 +236,34 @@ const QuerysCards = () => {
           </table>
         </div>
       )}
+
+      {/* Visitas por realizar */}
+      <h2 className="text-2xl font-bold text-gray-700 mb-6">
+        Visitas por realizar
+      </h2>
+      <div className="space-y-4">
+        {visitsForToday.length > 0 ? (
+          visitsForToday.map((visit) => (
+            <div
+              key={visit.id_visitgroup}
+              className="p-4 border border-gray-300 rounded-lg bg-white shadow-sm"
+            >
+              <h3 className="text-lg font-semibold text-gray-800">
+                Grupo: {visit.nameGroup}
+              </h3>
+              <p className="text-gray-600">Guía: {visit.guide}</p>
+              <ul className="list-disc ml-4 text-gray-600">
+                {visit.built_areas.map((area) => (
+                  <li key={area.id_builtArea}>{area.builtAreaName}</li>
+                ))}
+              </ul>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-600">No hay visitas programadas para hoy.</p>
+        )}
+      </div>
+
     </div>
   );
 };
