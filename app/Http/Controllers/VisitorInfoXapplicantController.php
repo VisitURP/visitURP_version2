@@ -291,104 +291,95 @@ class VisitorInfoXApplicantController extends Controller
 
 
     public function getVisitsWithDetailsByBuiltArea()
-{
-    // Obtener todas las áreas construidas
-    $builtAreas = BuiltArea::all(['id_builtArea', 'BuiltAreaName']);
-
-    // Inicializar los resultados con cada área
-    $areaVisitDetails = [];
-    foreach ($builtAreas as $area) {
-        $areaVisitDetails[$area->id_builtArea] = [
-            'name' => $area->BuiltAreaName,
-            'visit_count' => 0,
-            'visitors' => [] // Aquí almacenaremos los visitantes
-        ];
-    }
-
-    // Contar y agregar detalles de visitantes virtuales
-    $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
-    foreach ($virtualVisitors as $visitorInfo) {
-        $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
-        if ($visitor) {
-            $details = VisitVDetail::where('fk_id_visitorV', $visitor->id_visitorV)->where('get','I')->get();
-            foreach ($details as $detail) {
-                if (isset($areaVisitDetails[$detail->fk_id_builtArea])) {
-                    $areaVisitDetails[$detail->fk_id_builtArea]['visit_count']++;
-                    $areaVisitDetails[$detail->fk_id_builtArea]['visitors'][] = [
-                        'name' => $visitor->name,
-                        'lastName' => $visitor->lastName,
-                        'email' => $visitor->email,
-                        'phone' => $visitor->phone
-                    ];
+    {
+        // Obtener todas las áreas construidas
+        $builtAreas = BuiltArea::all(['id_builtArea', 'BuiltAreaName']);
+    
+        // Inicializar los resultados con cada área
+        $areaVisitDetails = [];
+        foreach ($builtAreas as $area) {
+            $areaVisitDetails[$area->id_builtArea] = [
+                'name' => $area->BuiltAreaName,
+                'visit_count' => 0,
+                'visitors' => [] // Aquí almacenaremos los visitantes
+            ];
+        }
+    
+        // Procesar visitantes según tipo
+        $processVisitors = function ($visitors, $visitorType) use (&$areaVisitDetails) {
+            foreach ($visitors as $visitorInfo) {
+                if ($visitorType === 'B') {
+                    $ids = explode('_', $visitorInfo->fk_id_visitor);
+                    $virtualId = $ids[0] ?? null;
+                    $physicalId = $ids[1] ?? null;
+    
+                    $virtualVisitor = VisitorV::find($virtualId);
+                    $physicalVisitor = VisitorP::find($physicalId);
+    
+                    if ($virtualVisitor) {
+                        $this->addVisitorDetails($virtualVisitor, $areaVisitDetails);
+                    }
+    
+                    if ($physicalVisitor) {
+                        $this->addVisitorDetails($physicalVisitor, $areaVisitDetails);
+                    }
+                } else {
+                    $visitor = $visitorType === 'V'
+                        ? VisitorV::find($visitorInfo->fk_id_visitor)
+                        : VisitorP::find($visitorInfo->fk_id_visitor);
+    
+                    if ($visitor) {
+                        $this->addVisitorDetails($visitor, $areaVisitDetails);
+                    }
                 }
+            }
+        };
+    
+        // Procesar visitantes virtuales, físicos y combinados
+        $virtualVisitors = VisitorInfoXApplicant::where('visitor_type', 'V')->get();
+        $physicalVisitors = VisitorInfoXApplicant::where('visitor_type', 'P')->get();
+        $bothVisitors = VisitorInfoXApplicant::where('visitor_type', 'B')->get();
+    
+        $processVisitors($virtualVisitors, 'V');
+        $processVisitors($physicalVisitors, 'P');
+        $processVisitors($bothVisitors, 'B');
+    
+        // Eliminar duplicados, conservando al menos uno
+        foreach ($areaVisitDetails as $id => &$areaDetails) {
+            $areaDetails['visitors'] = $this->filterDuplicatesKeepingOne($areaDetails['visitors']);
+        }
+    
+        return response()->json($areaVisitDetails);
+    }
+    
+    private function addVisitorDetails($visitor, &$areaVisitDetails)
+    {
+        $details = VisitVDetail::where('fk_id_visitorV', $visitor->id_visitorV)->where('get', 'I')->get();
+        foreach ($details as $detail) {
+            if (isset($areaVisitDetails[$detail->fk_id_builtArea])) {
+                $areaVisitDetails[$detail->fk_id_builtArea]['visit_count']++;
+                $areaVisitDetails[$detail->fk_id_builtArea]['visitors'][] = [
+                    'name' => $visitor->name,
+                    'lastName' => $visitor->lastName,
+                    'email' => $visitor->email,
+                    'phone' => $visitor->phone,
+                ];
             }
         }
     }
-
-    // Contar y agregar detalles de visitantes físicos
-    $physicalVisitors = VisitorInfoXApplicant::where('visitor_type', 'P')->get();
-    foreach ($physicalVisitors as $visitorInfo) {
-        $visitor = VisitorP::find($visitorInfo->fk_id_visitor);
-        if ($visitor) {
-            $details = VisitVDetail::where('fk_id_visitorV', $visitor->id_visitorP)->get();
-            foreach ($details as $detail) {
-                if (isset($areaVisitDetails[$detail->fk_id_builtArea])) {
-                    $areaVisitDetails[$detail->fk_id_builtArea]['visit_count']++;
-                    $areaVisitDetails[$detail->fk_id_builtArea]['visitors'][] = [
-                        'name' => $visitor->name,
-                        'lastName' => $visitor->lastName,
-                        'email' => $visitor->email,
-                        'phone' => $visitor->phone
-                    ];
-                }
+    
+    private function filterDuplicatesKeepingOne(array $visitors)
+    {
+        $uniqueVisitors = [];
+        foreach ($visitors as $visitor) {
+            if (!isset($uniqueVisitors[$visitor['email']])) {
+                $uniqueVisitors[$visitor['email']] = $visitor; // Almacenar el primero encontrado
             }
         }
+    
+        return array_values($uniqueVisitors);
     }
-
-    // Contar y agregar detalles de visitantes combinados (Both)
-    $BothVisitors = VisitorInfoXApplicant::where('visitor_type', 'B')->get();
-    foreach ($BothVisitors as $visitorInfo) {
-        $ids = explode('_', $visitorInfo->fk_id_visitor);
-        $virtualId = $ids[0];
-        $physicalId = $ids[1];
-
-        $visitorV = VisitorV::find($virtualId);
-        $visitorP = VisitorP::find($physicalId);
-
-        if ($visitorV) {
-            $details = VisitVDetail::where('fk_id_visitorV', $visitorV->id_visitorV)->get();
-            foreach ($details as $detail) {
-                if (isset($areaVisitDetails[$detail->fk_id_builtArea])) {
-                    $areaVisitDetails[$detail->fk_id_builtArea]['visit_count']++;
-                    $areaVisitDetails[$detail->fk_id_builtArea]['visitors'][] = [
-                        'name' => $visitorV->name,
-                        'lastName' => $visitorV->lastName,
-                        'email' => $visitorV->email,
-                        'phone' => $visitorV->phone
-                    ];
-                }
-            }
-        }
-
-        if ($visitorP) {
-            $details = VisitVDetail::where('fk_id_visitorV', $visitorP->id_visitorP)->get();
-            foreach ($details as $detail) {
-                if (isset($areaVisitDetails[$detail->fk_id_builtArea])) {
-                    $areaVisitDetails[$detail->fk_id_builtArea]['visit_count']++;
-                    $areaVisitDetails[$detail->fk_id_builtArea]['visitors'][] = [
-                        'name' => $visitorP->name,
-                        'lastName' => $visitorP->lastName,
-                        'email' => $visitorP->email,
-                        'phone' => $visitorP->phone
-                    ];
-                }
-            }
-        }
-    }
-
-     // Retornar como JSON (opcional)
-    return response()->json($areaVisitDetails);
-}
+    
 
 
     public function getVisitorInfosByGender($gender) 
