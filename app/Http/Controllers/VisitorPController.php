@@ -82,7 +82,7 @@ class VisitorPController extends Controller
         $visitorP = VisitorP::create($validatedData);
 
         // Crear nueva visita relacionada para el visitante recién creado
-        $visitP = VisitP::create([
+        $visitP = visitV::create([
         'fk_id_visitor' => $visitorP->id_visitorP,
         'visitor_type' => 'P',
         'fk_id_semester' => $this->assignSemester($this->determineVisitDate($validatedData)),
