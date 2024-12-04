@@ -310,7 +310,7 @@ class VisitorInfoXApplicantController extends Controller
     foreach ($virtualVisitors as $visitorInfo) {
         $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
         if ($visitor) {
-            $details = VisitVDetail::where('fk_id_visitorV', $visitor->id_visitorV)->get();
+            $details = VisitVDetail::where('fk_id_visitorV', $visitor->id_visitorV)->where('get','I')->get();
             foreach ($details as $detail) {
                 if (isset($areaVisitDetails[$detail->fk_id_builtArea])) {
                     $areaVisitDetails[$detail->fk_id_builtArea]['visit_count']++;
@@ -386,15 +386,7 @@ class VisitorInfoXApplicantController extends Controller
         }
     }
 
-    // // Imprimir resultados
-    // foreach ($areaVisitDetails as $id => $data) {
-    //     echo "Área: {$data['name']} (ID: $id) - Visitas: {$data['visit_count']}\n";
-    //     foreach ($data['visitors'] as $visitor) {
-    //         echo "    Visitante: {$visitor['name']} - Email: {$visitor['email']} - Teléfono: {$visitor['phone']}\n";
-    //     }
-    // }
-
-    // Retornar como JSON (opcional)
+     // Retornar como JSON (opcional)
     return response()->json($areaVisitDetails);
 }
 
