@@ -238,7 +238,7 @@ const QuerysCards = () => {
       )}
 
       {/* Visitas por realizar */}
-      <h2 className="text-2xl font-bold text-gray-700 mb-6">
+      {/* <h2 className="text-2xl font-bold text-gray-700 mb-6">
         Visitas por realizar
       </h2>
       <div className="space-y-4">
@@ -262,7 +262,7 @@ const QuerysCards = () => {
         ) : (
           <p className="text-gray-600">No hay visitas programadas para hoy.</p>
         )}
-      </div>
+      </div> */}
 
     </div>
   );

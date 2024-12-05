@@ -31,7 +31,7 @@ const navigation = [
     icon: UsersIcon,
     children: [
       { name: "Presenciales", to: "/visitorsp" },
-      { name: "Grupos", to: "/visitgroup" },
+      // { name: "Grupos", to: "/visitgroup" },
       { name: "Virtuales", to: "/visitorsv" },
     ],
   },
