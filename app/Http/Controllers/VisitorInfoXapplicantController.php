@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class VisitorInfoXApplicantController extends Controller
 {
@@ -394,30 +395,44 @@ class VisitorInfoXApplicantController extends Controller
         foreach ($virtualVisitors as $visitorInfo) {
             // Obtener el género del visitante usando el fk_id_visitor
             $visitor = VisitorV::find($visitorInfo->fk_id_visitor);
-            
-                if ($visitor->gender === 'F') {
-                    $femaleCount++;
-                } elseif ($visitor->gender === 'M') {
-                    $maleCount++;
-                } elseif ($visitor->gender === 'NA') {
-                    $naCount++;
-                }
+
+            $visitorGender = $visitor ? ($visitor->gender ?? 'Desconocido') : 'Desconocido';  
+
+            // // Log del visitante cargado
+            // Log::info('Virtual Visitor:', ['id' => $visitorInfo->fk_id_visitor, 'gender' => $visitorGender]);
+
+
+            if ($visitorGender === 'F') {
+                $femaleCount++;
+            } elseif ($visitorGender === 'M') {
+                $maleCount++;
+            } elseif ($visitorGender === 'NA') {
+                $naCount++;
+            }
             
         }
 
              // Contar visitantes presenciales
             $physicalVisitors = VisitorInfoXApplicant::where('visitor_type', 'P')->get();
             foreach ($physicalVisitors as $visitorInfo) {
-             // Obtener el género del visitante usando el fk_id_visitor
-             $visitor = visitorP::find($visitorInfo->fk_id_visitor);
-             
-                 if ($visitor->gender === 'F') {
-                     $femaleCount++;
-                 } elseif ($visitor->gender === 'M') {
-                     $maleCount++;
-                 } elseif ($visitor->gender === 'NA') {
-                     $naCount++;
-                 }
+            // Log::info("Checking Physical Visitor", ['id' => $visitorInfo->fk_id_visitor, 'visitor' => $visitor]);
+
+            // Obtener el género del visitante usando el fk_id_visitor
+            $visitor = visitorP::find($visitorInfo->fk_id_visitor);
+
+            $visitorGender = $visitor ? ($visitor->gender ?? 'Desconocido') : 'Desconocido';
+    
+            Log::info("Physical Visitor Gender Assigned", ['id' => $visitorInfo->fk_id_visitor, 'assigned_gender' => $visitorGender]);
+
+            // // Contar el visitante virtual
+            // $visitorGender = $visitor ? ($visitor->gender ?? 'Desconocido') : 'Desconocido';  
+            if ($visitorGender === 'F') {
+                $femaleCount++;
+            } elseif ($visitorGender === 'M') {
+                $maleCount++;
+            } elseif ($visitorGender === 'NA') {
+                $naCount++;
+            }
              
          }
 
@@ -433,16 +448,21 @@ class VisitorInfoXApplicantController extends Controller
             $virtualId = $ids[0]; // 12
             $physicalId = $ids[1]; // 3
 
+            // Contar el visitante virtual
             $visitor = VisitorV::find($virtualId);
-            
-                if ($visitor->gender === 'F') {
-                    $femaleCount++;
-                } elseif ($visitor->gender === 'M') {
-                    $maleCount++;
-                } elseif ($visitor->gender === 'NA') {
-                    $naCount++;
-                }
-            
+            $visitorGender = $visitor ? ($visitor->gender ?? 'Desconocido') : 'Desconocido';  
+
+            // Log::info('Both Visitor:', [
+            //     'virtual_id' => $virtualId, 'physical_id' => $physicalId, 'gender' => $visitorGender
+            // ]);
+
+            if ($visitorGender === 'F') {
+                $femaleCount++;
+            } elseif ($visitorGender === 'M') {
+                $maleCount++;
+            } elseif ($visitorGender === 'NA') {
+                $naCount++;
+            }
             
         }
 
